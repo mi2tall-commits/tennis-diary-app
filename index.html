@@ -1,0 +1,4169 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+  <title>🎾 나의 테니스 일지 | Tennis Journal & String AI</title>
+  <!-- Chart.js CDN -->
+  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+  <!-- Telegram Web App SDK -->
+  <script src="https://telegram.org/js/telegram-web-app.js"></script>
+  <script>
+    try {
+      if (window.Telegram && window.Telegram.WebApp) {
+        window.Telegram.WebApp.ready();
+        window.Telegram.WebApp.expand();
+      }
+    } catch(e) {}
+  </script>
+  <style>
+    @import url('https://fonts.googleapis.com/css2?family=Pretendard:wght@300;400;500;600;700;800&display=swap');
+    
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    body {
+      font-family: 'Pretendard', -apple-system, BlinkMacSystemFont, system-ui, sans-serif;
+      background-color: #f6f8fa;
+      color: #1e293b;
+      line-height: 1.5;
+      padding-bottom: 40px;
+    }
+
+    .container { max-width: 640px; margin: 0 auto; padding: 12px 16px; }
+
+    /* Header */
+    .header {
+      background: #ffffff;
+      border-bottom: 1px solid #e2e8f0;
+      position: sticky;
+      top: 0;
+      z-index: 50;
+      padding: 12px 16px;
+    }
+    .header-inner {
+      max-width: 640px;
+      margin: 0 auto;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+    }
+    .logo-box { display: flex; align-items: center; gap: 10px; }
+    .logo-icon {
+      width: 36px;
+      height: 36px;
+      background: linear-gradient(135deg, #16a34a, #059669);
+      border-radius: 10px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 18px;
+    }
+    .logo-text h1 { font-size: 17px; font-weight: 800; color: #0f172a; line-height: 1.2; }
+    .logo-text p { font-size: 11px; color: #64748b; font-weight: 500; }
+    
+    .header-actions { display: flex; align-items: center; gap: 6px; }
+    .btn-header {
+      background: #f1f5f9;
+      border: none;
+      padding: 7px 11px;
+      border-radius: 8px;
+      font-size: 12px;
+      font-weight: 600;
+      color: #475569;
+      cursor: pointer;
+      display: inline-flex;
+      align-items: center;
+      gap: 4px;
+    }
+    .btn-header:hover { background: #e2e8f0; color: #0f172a; }
+
+    /* Stat Cards */
+    .stats-grid {
+      display: grid;
+      grid-template-columns: repeat(2, 1fr);
+      gap: 10px;
+      margin-top: 12px;
+    }
+    @media (min-width: 480px) {
+      .stats-grid { grid-template-columns: repeat(4, 1fr); }
+    }
+    .stat-card {
+      background: #ffffff;
+      padding: 12px;
+      border-radius: 14px;
+      border: 1px solid #e2e8f0;
+    }
+    .stat-label { font-size: 11px; color: #64748b; font-weight: 600; }
+    .stat-val { font-size: 18px; font-weight: 800; margin-top: 2px; color: #0f172a; }
+    .stat-val.green { color: #16a34a; }
+    .stat-val.blue { color: #2563eb; }
+    .stat-val.amber { color: #d97706; }
+
+    /* 4 Nav Tabs */
+    .nav-tabs {
+      display: flex;
+      background: #e2e8f0;
+      padding: 4px;
+      border-radius: 12px;
+      margin-top: 14px;
+      gap: 4px;
+    }
+    .nav-tab {
+      flex: 1;
+      border: none;
+      background: transparent;
+      padding: 9px 2px;
+      border-radius: 9px;
+      font-size: 12px;
+      font-weight: 600;
+      color: #64748b;
+      cursor: pointer;
+      transition: all 0.2s;
+      text-align: center;
+      white-space: nowrap;
+    }
+    .nav-tab.active {
+      background: #ffffff;
+      color: #16a34a;
+      font-weight: 700;
+      box-shadow: 0 1px 3px rgba(0,0,0,0.08);
+    }
+
+    /* Card */
+    .card {
+      background: #ffffff;
+      border-radius: 16px;
+      border: 1px solid #e2e8f0;
+      padding: 16px;
+      margin-top: 14px;
+    }
+
+    /* Category Selector */
+    .category-grid {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 8px;
+      margin-top: 6px;
+    }
+    .cat-btn {
+      background: #f8fafc;
+      border: 1px solid #e2e8f0;
+      border-radius: 10px;
+      padding: 10px 4px;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 4px;
+      cursor: pointer;
+      font-size: 12px;
+      font-weight: 600;
+      color: #475569;
+      transition: all 0.15s;
+    }
+    .cat-btn .icon { font-size: 18px; }
+    .cat-btn.active {
+      background: #f0fdf4;
+      border-color: #16a34a;
+      color: #15803d;
+      box-shadow: 0 0 0 2px rgba(22, 163, 74, 0.2);
+    }
+
+    /* Form Controls */
+    .form-group { margin-top: 12px; }
+    .form-label { display: block; font-size: 12px; font-weight: 600; color: #475569; margin-bottom: 4px; }
+    .form-input, .form-select, .form-textarea {
+      width: 100%;
+      padding: 10px 12px;
+      border: 1px solid #cbd5e1;
+      border-radius: 10px;
+      font-size: 14px;
+      background: #ffffff;
+      color: #1e293b;
+      outline: none;
+      font-family: inherit;
+    }
+    .form-input:focus, .form-select:focus, .form-textarea:focus {
+      border-color: #16a34a;
+      box-shadow: 0 0 0 2px rgba(22, 163, 74, 0.15);
+    }
+    .grid-2 { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+    .grid-3 { display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px; }
+
+    /* Dynamic Boxes */
+    .dynamic-box {
+      margin-top: 12px;
+      padding: 12px;
+      border-radius: 12px;
+      border: 1px solid #bbf7d0;
+      background: #f0fdf4;
+    }
+    .dynamic-box.blue {
+      border-color: #bfdbfe;
+      background: #eff6ff;
+    }
+
+    /* Multi-select Skill Chips */
+    .skill-chips-grid {
+      display: grid;
+      grid-template-columns: repeat(2, 1fr);
+      gap: 6px;
+      margin-top: 6px;
+    }
+    @media (min-width: 480px) {
+      .skill-chips-grid { grid-template-columns: repeat(4, 1fr); }
+    }
+    .skill-chip {
+      background: #ffffff;
+      border: 1px solid #cbd5e1;
+      border-radius: 8px;
+      padding: 8px 6px;
+      font-size: 12px;
+      font-weight: 600;
+      color: #475569;
+      cursor: pointer;
+      text-align: center;
+      transition: all 0.15s;
+    }
+    .skill-chip.active {
+      background: #16a34a;
+      border-color: #16a34a;
+      color: #ffffff;
+      font-weight: 700;
+      box-shadow: 0 1px 3px rgba(22, 163, 74, 0.25);
+    }
+
+    /* Result Buttons */
+    .result-btn {
+      padding: 9px 4px;
+      border-radius: 8px;
+      border: 1px solid #cbd5e1;
+      background: #ffffff;
+      font-size: 13px;
+      font-weight: 600;
+      color: #475569;
+      cursor: pointer;
+      text-align: center;
+    }
+    .result-btn.active-win { background: #16a34a; border-color: #16a34a; color: #ffffff; font-weight: 700; }
+    .result-btn.active-loss { background: #ef4444; border-color: #ef4444; color: #ffffff; font-weight: 700; }
+    .result-btn.active-draw { background: #64748b; border-color: #64748b; color: #ffffff; font-weight: 700; }
+
+    /* 🤖 GEMINI AI COACH BAR */
+    .ai-coach-bar {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      background: linear-gradient(135deg, #f0fdf4 0%, #ecfdf5 100%);
+      border: 1px solid #a7f3d0;
+      border-radius: 10px;
+      padding: 8px 12px;
+      margin-bottom: 6px;
+    }
+    .ai-coach-btn {
+      background: linear-gradient(135deg, #16a34a, #059669);
+      color: #ffffff;
+      border: none;
+      padding: 6px 12px;
+      border-radius: 8px;
+      font-size: 12px;
+      font-weight: 700;
+      cursor: pointer;
+      display: inline-flex;
+      align-items: center;
+      gap: 5px;
+      box-shadow: 0 2px 4px rgba(22, 163, 74, 0.25);
+    }
+
+    /* Multi Photo Upload & Preview Grid */
+    .photo-upload-btn {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      background: #f1f5f9;
+      border: 1px dashed #94a3b8;
+      padding: 10px 14px;
+      border-radius: 10px;
+      font-size: 13px;
+      font-weight: 600;
+      color: #334155;
+      cursor: pointer;
+      transition: all 0.2s;
+    }
+    .photo-upload-btn:hover { background: #e2e8f0; border-color: #16a34a; }
+    
+    .photos-preview-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(90px, 1fr));
+      gap: 8px;
+      margin-top: 10px;
+    }
+    .photo-preview-item {
+      position: relative;
+      border-radius: 10px;
+      overflow: hidden;
+      aspect-ratio: 1 / 1;
+      background: #0f172a;
+      border: 1px solid #cbd5e1;
+    }
+    .photo-preview-item img {
+      width: 100%;
+      height: 100%;
+      object-fit: cover;
+      display: block;
+    }
+    .photo-delete-btn {
+      position: absolute;
+      top: 4px;
+      right: 4px;
+      background: rgba(239, 68, 68, 0.9);
+      color: #ffffff;
+      border: none;
+      border-radius: 50%;
+      width: 22px;
+      height: 22px;
+      font-size: 12px;
+      font-weight: 800;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+
+    /* Submit Button */
+    .submit-btn {
+      width: 100%;
+      margin-top: 16px;
+      background: #16a34a;
+      color: #ffffff;
+      border: none;
+      padding: 13px;
+      border-radius: 12px;
+      font-size: 15px;
+      font-weight: 700;
+      cursor: pointer;
+      box-shadow: 0 2px 6px rgba(22, 163, 74, 0.3);
+    }
+    .submit-btn:active { transform: scale(0.98); }
+    .submit-btn:disabled { background: #94a3b8; cursor: not-allowed; }
+
+    /* Filter Pills */
+    .filter-scroll {
+      display: flex;
+      gap: 6px;
+      overflow-x: auto;
+      padding-bottom: 4px;
+      margin-top: 12px;
+    }
+    .filter-pill {
+      white-space: nowrap;
+      border: 1px solid #cbd5e1;
+      background: #ffffff;
+      color: #475569;
+      padding: 6px 12px;
+      border-radius: 8px;
+      font-size: 12px;
+      font-weight: 600;
+      cursor: pointer;
+    }
+    .filter-pill.active {
+      background: #16a34a;
+      color: #ffffff;
+      border-color: #16a34a;
+    }
+
+    /* Log Item Cards */
+    .log-item {
+      background: #ffffff;
+      border: 1px solid #e2e8f0;
+      border-radius: 14px;
+      padding: 14px;
+      margin-top: 10px;
+    }
+    .log-item-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 6px;
+    }
+    .cat-tag {
+      font-size: 11px;
+      font-weight: 700;
+      padding: 2px 8px;
+      border-radius: 6px;
+      background: #f0fdf4;
+      color: #15803d;
+      border: 1px solid #bbf7d0;
+    }
+    .cat-tag.game { background: #eff6ff; color: #1d4ed8; border-color: #bfdbfe; }
+    .cat-tag.practice { background: #fffbeb; color: #b45309; border-color: #fde68a; }
+
+    .badge-win { background: #dcfce7; color: #15803d; font-size: 11px; font-weight: 800; padding: 2px 8px; border-radius: 6px; }
+    .badge-loss { background: #fee2e2; color: #b91c1c; font-size: 11px; font-weight: 800; padding: 2px 8px; border-radius: 6px; }
+    
+    .log-date { font-size: 12px; color: #94a3b8; font-weight: 500; }
+    .log-title { font-size: 15px; font-weight: 700; color: #0f172a; margin-bottom: 6px; }
+    
+    .log-actions {
+      display: flex;
+      align-items: center;
+      gap: 4px;
+    }
+    .btn-action {
+      border: 1px solid #e2e8f0;
+      background: #f8fafc;
+      padding: 3px 7px;
+      border-radius: 6px;
+      font-size: 11px;
+      font-weight: 600;
+      color: #475569;
+      cursor: pointer;
+      transition: all 0.15s;
+    }
+    .btn-action.edit:hover { background: #e0e7ff; color: #4338ca; border-color: #c7d2fe; }
+    .btn-action.del:hover { background: #fee2e2; color: #b91c1c; border-color: #fca5a5; }
+
+    .log-info-row {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 6px;
+      font-size: 13px;
+      font-weight: 600;
+      margin-bottom: 6px;
+      align-items: center;
+    }
+    .info-score { color: #2563eb; font-weight: 800; }
+    .info-skill { background: #f0fdf4; color: #15803d; border: 1px solid #bbf7d0; padding: 2px 8px; border-radius: 6px; font-size: 11px; font-weight: 700; }
+
+    .log-notes {
+      font-size: 12px;
+      color: #334155;
+      background: #f8fafc;
+      padding: 10px;
+      border-radius: 8px;
+      margin-top: 6px;
+      border-left: 3px solid #3b82f6;
+      white-space: pre-wrap;
+    }
+    .log-ai-summary {
+      font-size: 12px;
+      color: #065f46;
+      background: #f0fdf4;
+      border: 1px solid #bbf7d0;
+      padding: 10px;
+      border-radius: 8px;
+      margin-top: 6px;
+      border-left: 3px solid #16a34a;
+      white-space: pre-wrap;
+    }
+
+    .log-photos-gallery {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(80px, 1fr));
+      gap: 6px;
+      margin-top: 8px;
+    }
+    .log-photo-item {
+      aspect-ratio: 1 / 1;
+      border-radius: 8px;
+      overflow: hidden;
+      border: 1px solid #cbd5e1;
+      cursor: pointer;
+      background: #0f172a;
+      position: relative;
+    }
+    .log-photo-item.is-video::after {
+      content: '▶';
+      position: absolute;
+      top: 50%;
+      left: 50%;
+      transform: translate(-50%, -50%);
+      background: rgba(0, 0, 0, 0.7);
+      color: #34d399;
+      font-size: 15px;
+      width: 32px;
+      height: 32px;
+      border-radius: 50%;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      border: 1.5px solid rgba(52, 211, 153, 0.7);
+      pointer-events: none;
+      box-shadow: 0 4px 12px rgba(0,0,0,0.6);
+    }
+    .log-photo-item .video-tag-pill {
+      position: absolute;
+      bottom: 4px;
+      left: 4px;
+      background: rgba(0, 0, 0, 0.85);
+      color: #34d399;
+      font-size: 9px;
+      font-weight: 800;
+      padding: 1px 6px;
+      border-radius: 4px;
+      border: 1px solid rgba(52, 211, 153, 0.4);
+      pointer-events: none;
+      z-index: 2;
+    }
+    .photo-preview-item {
+      position: relative;
+    }
+    .photo-preview-item.is-video::after {
+      content: '▶ 동영상';
+      position: absolute;
+      bottom: 4px;
+      left: 4px;
+      background: rgba(0, 0, 0, 0.85);
+      color: #34d399;
+      font-size: 10px;
+      font-weight: 800;
+      padding: 2px 6px;
+      border-radius: 6px;
+      pointer-events: none;
+      border: 1px solid rgba(52, 211, 153, 0.4);
+      z-index: 2;
+    }
+    .log-photo-item img {
+      width: 100%;
+      height: 100%;
+      object-fit: cover;
+      display: block;
+      transition: transform 0.2s;
+    }
+    .log-photo-item:hover img {
+      transform: scale(1.05);
+    }
+
+    /* Fullscreen Photo/Video Lightbox Modal */
+    .photo-modal-content {
+      position: relative;
+      max-width: 90vw;
+      max-height: 90vh;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+    }
+    .photo-modal-img-wrap {
+      max-width: 100%;
+      max-height: 80vh;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      user-select: none;
+      touch-action: pan-y;
+    }
+    .photo-modal-img {
+      max-width: 100%;
+      max-height: 80vh;
+      border-radius: 12px;
+      object-fit: contain;
+      box-shadow: 0 10px 25px rgba(0,0,0,0.5);
+    }
+    .photo-modal-video {
+      max-width: 100%;
+      max-height: 75vh;
+      border-radius: 12px;
+      background: #000000;
+      box-shadow: 0 10px 25px rgba(0,0,0,0.5);
+      outline: none;
+    }
+    .photo-modal-link-btn {
+      margin-top: 8px;
+      background: rgba(255, 255, 255, 0.15);
+      border: 1px solid rgba(255, 255, 255, 0.25);
+      color: #ffffff;
+      padding: 6px 14px;
+      border-radius: 10px;
+      font-size: 12px;
+      font-weight: 700;
+      text-decoration: none;
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      transition: all 0.2s;
+    }
+    .photo-modal-link-btn:hover {
+      background: rgba(255, 255, 255, 0.3);
+      color: #34d399;
+    }
+    .photo-modal-close {
+      position: absolute;
+      top: -38px;
+      right: 0;
+      background: rgba(255, 255, 255, 0.2);
+      border: none;
+      color: #ffffff;
+      font-size: 24px;
+      width: 34px;
+      height: 34px;
+      border-radius: 50%;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      transition: background 0.2s;
+      z-index: 10;
+    }
+    .photo-modal-close:hover { background: rgba(255, 255, 255, 0.4); }
+    .photo-nav-btn {
+      position: absolute;
+      top: 50%;
+      transform: translateY(-50%);
+      background: rgba(0, 0, 0, 0.5);
+      color: #ffffff;
+      border: 1px solid rgba(255, 255, 255, 0.2);
+      font-size: 28px;
+      width: 44px;
+      height: 44px;
+      border-radius: 50%;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      transition: all 0.2s;
+      z-index: 10;
+    }
+    .photo-nav-btn:hover { background: rgba(0, 0, 0, 0.8); }
+    .photo-nav-btn.prev { left: -50px; }
+    .photo-nav-btn.next { right: -50px; }
+    @media (max-width: 600px) {
+      .photo-nav-btn.prev { left: 8px; }
+      .photo-nav-btn.next { right: 8px; }
+    }
+    .photo-modal-counter {
+      color: #ffffff;
+      font-size: 13px;
+      font-weight: 700;
+      margin-top: 10px;
+      background: rgba(0, 0, 0, 0.6);
+      padding: 3px 12px;
+      border-radius: 12px;
+    }
+
+    /* 📄 Pagination Bar */
+    .pagination-bar {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      background: #ffffff;
+      border: 1px solid #e2e8f0;
+      border-radius: 12px;
+      padding: 10px 14px;
+      margin-top: 14px;
+    }
+    .page-nav-btn {
+      background: #f1f5f9;
+      border: 1px solid #cbd5e1;
+      border-radius: 8px;
+      padding: 7px 14px;
+      font-size: 13px;
+      font-weight: 700;
+      color: #334155;
+      cursor: pointer;
+      transition: all 0.15s;
+    }
+    .page-nav-btn:hover:not(:disabled) {
+      background: #e2e8f0;
+      color: #0f172a;
+    }
+    .page-nav-btn:disabled {
+      opacity: 0.35;
+      cursor: not-allowed;
+    }
+    .page-indicator {
+      font-size: 12px;
+      font-weight: 600;
+      color: #64748b;
+    }
+    .page-indicator b {
+      color: #16a34a;
+      font-weight: 800;
+    }
+
+    /* Comments Section */
+    .comments-wrapper {
+      margin-top: 12px;
+      border-top: 1px dashed #e2e8f0;
+      padding-top: 10px;
+    }
+    .comments-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      font-size: 12px;
+      font-weight: 700;
+      color: #475569;
+      margin-bottom: 6px;
+    }
+    .comment-list {
+      display: flex;
+      flex-direction: column;
+      gap: 6px;
+      margin-bottom: 8px;
+    }
+    .comment-item {
+      background: #f8fafc;
+      border: 1px solid #e2e8f0;
+      border-radius: 8px;
+      padding: 8px 10px;
+      font-size: 12px;
+    }
+    .comment-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 3px;
+    }
+    .comment-author {
+      font-weight: 700;
+      color: #15803d;
+      display: flex;
+      align-items: center;
+      gap: 4px;
+      font-size: 12px;
+    }
+    .comment-meta-right { display: flex; align-items: center; gap: 6px; }
+    .comment-time { font-size: 10px; color: #94a3b8; }
+    .comment-action-btn {
+      background: none;
+      border: none;
+      font-size: 11px;
+      color: #94a3b8;
+      cursor: pointer;
+      padding: 1px 3px;
+    }
+    .comment-action-btn:hover { color: #16a34a; }
+    .comment-action-btn.delete:hover { color: #ef4444; }
+    .comment-text { color: #1e293b; line-height: 1.4; word-break: break-word; font-size: 12px; }
+
+    .comment-form { display: flex; gap: 6px; margin-top: 8px; align-items: center; }
+    .comment-input-author {
+      width: 76px;
+      flex-shrink: 0;
+      padding: 6px 8px;
+      border: 1px solid #cbd5e1;
+      border-radius: 8px;
+      font-size: 11.5px;
+      font-weight: 600;
+      color: #334155;
+      background-color: #f8fafc;
+      text-align: left;
+    }
+    .comment-input-text {
+      flex: 1;
+      min-width: 0;
+      padding: 7px 10px;
+      border: 1px solid #cbd5e1;
+      border-radius: 8px;
+      font-size: 12px;
+    }
+    .comment-submit-btn {
+      background: #16a34a;
+      color: #ffffff;
+      border: none;
+      padding: 7px 12px;
+      border-radius: 8px;
+      font-size: 12px;
+      font-weight: 700;
+      cursor: pointer;
+      white-space: nowrap;
+    }
+
+    /* 🎾 4번째 탭: 스트링 관리 & AI 진단 스타일 */
+    .string-hero-card {
+      background: linear-gradient(135deg, #064e3b 0%, #065f46 50%, #047857 100%);
+      color: #ffffff;
+      border-radius: 16px;
+      padding: 18px;
+      margin-top: 10px;
+      box-shadow: 0 4px 15px rgba(6, 78, 59, 0.25);
+    }
+    .string-hero-title {
+      font-size: 13px;
+      color: #a7f3d0;
+      font-weight: 700;
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+    }
+    .string-hero-racket {
+      font-size: 20px;
+      font-weight: 800;
+      margin-top: 4px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+    }
+    .string-hero-spec {
+      font-size: 13px;
+      color: #d1fae5;
+      margin-top: 2px;
+      display: flex;
+      gap: 8px;
+      flex-wrap: wrap;
+    }
+    .string-spec-tag {
+      background: rgba(255, 255, 255, 0.18);
+      padding: 2px 8px;
+      border-radius: 6px;
+      font-size: 11px;
+      font-weight: 600;
+    }
+    
+    .string-metrics-grid {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 8px;
+      margin-top: 14px;
+      background: rgba(0, 0, 0, 0.2);
+      padding: 10px;
+      border-radius: 12px;
+      text-align: center;
+    }
+    .string-m-label { font-size: 11px; color: #a7f3d0; }
+    .string-m-val { font-size: 16px; font-weight: 800; color: #ffffff; margin-top: 2px; }
+
+    /* Lifetime Progress Bar */
+    .string-progress-wrapper {
+      margin-top: 14px;
+    }
+    .string-progress-info {
+      display: flex;
+      justify-content: space-between;
+      font-size: 11px;
+      color: #d1fae5;
+      font-weight: 600;
+      margin-bottom: 4px;
+    }
+    .string-progress-bg {
+      background: rgba(255, 255, 255, 0.2);
+      border-radius: 8px;
+      height: 8px;
+      overflow: hidden;
+    }
+    .string-progress-fill {
+      height: 100%;
+      border-radius: 8px;
+      transition: width 0.4s ease;
+    }
+    .string-progress-fill.safe { background: #34d399; }
+    .string-progress-fill.warn { background: #fbbf24; }
+    .string-progress-fill.danger { background: #f87171; }
+
+    /* Big AI String Diagnosis Button */
+    .btn-ai-diagnose {
+      width: 100%;
+      margin-top: 14px;
+      background: linear-gradient(135deg, #10b981, #047857);
+      color: #ffffff;
+      border: none;
+      padding: 14px;
+      border-radius: 14px;
+      font-size: 15px;
+      font-weight: 800;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 8px;
+      box-shadow: 0 4px 12px rgba(16, 185, 129, 0.35);
+      transition: all 0.2s;
+    }
+    .btn-ai-diagnose:hover { transform: translateY(-1px); }
+    .btn-ai-diagnose:active { transform: scale(0.98); }
+    .btn-ai-diagnose:disabled { background: #94a3b8; cursor: not-allowed; }
+
+    /* AI Analysis Result Display Box */
+    .ai-analysis-result-box {
+      background: #ffffff;
+      border: 1.5px solid #10b981;
+      border-radius: 14px;
+      padding: 16px;
+      margin-top: 14px;
+      box-shadow: 0 4px 12px rgba(16, 185, 129, 0.1);
+    }
+    .ai-result-header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      border-bottom: 1px solid #e2e8f0;
+      padding-bottom: 8px;
+      margin-bottom: 10px;
+    }
+    .ai-result-title {
+      font-size: 14px;
+      font-weight: 800;
+      color: #065f46;
+      display: flex;
+      align-items: center;
+      gap: 6px;
+    }
+    .ai-result-body {
+      font-size: 13px;
+      color: #1e293b;
+      line-height: 1.6;
+      white-space: pre-wrap;
+    }
+
+    /* String History List */
+    .string-history-card {
+      background: #ffffff;
+      border: 1px solid #e2e8f0;
+      border-radius: 12px;
+      padding: 12px 14px;
+      margin-top: 8px;
+    }
+    .string-h-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+    }
+    .string-h-racket { font-size: 14px; font-weight: 700; color: #0f172a; }
+    .string-h-date { font-size: 11px; color: #94a3b8; }
+    .string-h-details {
+      display: flex;
+      gap: 8px;
+      flex-wrap: wrap;
+      margin-top: 4px;
+      font-size: 12px;
+      color: #475569;
+    }
+
+    /* 🎥 5번째 탭: AI 비디오 폼 분석 스타일 */
+    .video-hero-card {
+      background: linear-gradient(135deg, #1e1b4b 0%, #312e81 50%, #4338ca 100%);
+      color: #ffffff;
+      border-radius: 16px;
+      padding: 18px;
+      margin-top: 10px;
+      box-shadow: 0 4px 15px rgba(49, 46, 129, 0.25);
+    }
+    .video-hero-title {
+      font-size: 13px;
+      color: #c7d2fe;
+      font-weight: 700;
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+    }
+    .video-hero-headline {
+      font-size: 18px;
+      font-weight: 800;
+      margin-top: 4px;
+      line-height: 1.3;
+    }
+    .video-hero-desc {
+      font-size: 12px;
+      color: #e0e7ff;
+      margin-top: 4px;
+      line-height: 1.4;
+    }
+
+    /* Video Upload Dropzone */
+    .video-dropzone {
+      border: 2px dashed #818cf8;
+      background: #f5f3ff;
+      border-radius: 14px;
+      padding: 20px 14px;
+      text-align: center;
+      cursor: pointer;
+      transition: all 0.2s;
+      margin-top: 12px;
+    }
+    .video-dropzone:hover {
+      background: #ede9fe;
+      border-color: #6366f1;
+    }
+    .video-dropzone.dragover {
+      background: #ddd6fe;
+      border-color: #4f46e5;
+    }
+    .video-dropzone-icon { font-size: 32px; margin-bottom: 6px; }
+    .video-dropzone-text { font-size: 14px; font-weight: 700; color: #3730a3; }
+    .video-dropzone-sub { font-size: 11px; color: #6b7280; margin-top: 3px; }
+
+    /* Video Player Box */
+    .video-player-box {
+      margin-top: 12px;
+      border-radius: 14px;
+      overflow: hidden;
+      background: #0f172a;
+      border: 1px solid #cbd5e1;
+      position: relative;
+    }
+    .video-player-box video {
+      width: 100%;
+      max-height: 320px;
+      display: block;
+      object-fit: contain;
+    }
+    .video-meta-bar {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      padding: 8px 12px;
+      background: #1e293b;
+      color: #e2e8f0;
+      font-size: 11px;
+      font-weight: 600;
+    }
+
+    /* Motion Type Selection Grid */
+    .motion-type-grid {
+      display: grid;
+      grid-template-columns: repeat(2, 1fr);
+      gap: 6px;
+      margin-top: 6px;
+    }
+    @media (min-width: 480px) {
+      .motion-type-grid { grid-template-columns: repeat(3, 1fr); }
+    }
+    .motion-btn {
+      background: #ffffff;
+      border: 1px solid #cbd5e1;
+      border-radius: 8px;
+      padding: 8px 6px;
+      font-size: 12px;
+      font-weight: 600;
+      color: #334155;
+      cursor: pointer;
+      text-align: center;
+      transition: all 0.15s;
+    }
+    .motion-btn.active {
+      background: #4338ca;
+      border-color: #4338ca;
+      color: #ffffff;
+      font-weight: 700;
+      box-shadow: 0 2px 4px rgba(67, 56, 202, 0.25);
+    }
+
+    /* Quick Checklist Chips */
+    .focus-chip {
+      background: #f1f5f9;
+      border: 1px solid #cbd5e1;
+      border-radius: 6px;
+      padding: 4px 8px;
+      font-size: 11px;
+      font-weight: 600;
+      color: #475569;
+      cursor: pointer;
+      display: inline-block;
+      margin: 2px;
+      transition: all 0.15s;
+    }
+    .focus-chip.active {
+      background: #e0e7ff;
+      border-color: #6366f1;
+      color: #3730a3;
+      font-weight: 700;
+    }
+
+    /* Big Run Button */
+    .btn-run-video-analysis {
+      width: 100%;
+      margin-top: 16px;
+      background: linear-gradient(135deg, #4338ca 0%, #3730a3 100%);
+      color: #ffffff;
+      border: none;
+      padding: 14px;
+      border-radius: 12px;
+      font-size: 15px;
+      font-weight: 800;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 8px;
+      box-shadow: 0 4px 12px rgba(67, 56, 202, 0.3);
+      transition: all 0.2s;
+    }
+    .btn-run-video-analysis:hover { transform: translateY(-1px); }
+    .btn-run-video-analysis:active { transform: scale(0.98); }
+    .btn-run-video-analysis:disabled { background: #94a3b8; cursor: not-allowed; transform: none; }
+
+    /* Video Analysis Result Card */
+    .video-result-card {
+      background: #ffffff;
+      border: 1.5px solid #6366f1;
+      border-radius: 16px;
+      padding: 16px;
+      margin-top: 16px;
+      box-shadow: 0 4px 15px rgba(99, 102, 241, 0.12);
+    }
+    .video-result-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      border-bottom: 1px solid #e2e8f0;
+      padding-bottom: 10px;
+      margin-bottom: 12px;
+    }
+    .video-score-badge {
+      background: linear-gradient(135deg, #4338ca, #6366f1);
+      color: #ffffff;
+      font-size: 13px;
+      font-weight: 800;
+      padding: 4px 10px;
+      border-radius: 8px;
+    }
+    .video-result-content {
+      font-size: 13px;
+      color: #1e293b;
+      line-height: 1.65;
+      white-space: pre-wrap;
+    }
+
+    /* Modals */
+    .modal-overlay {
+      position: fixed;
+      top: 0; left: 0; right: 0; bottom: 0;
+      background: rgba(0, 0, 0, 0.6);
+      z-index: 150;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      padding: 16px;
+    }
+    .modal-content {
+      background: #ffffff;
+      border-radius: 16px;
+      max-width: 500px;
+      width: 100%;
+      max-height: 90vh;
+      overflow-y: auto;
+      padding: 18px;
+      box-shadow: 0 10px 25px rgba(0,0,0,0.2);
+    }
+    .modal-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 12px;
+      border-bottom: 1px solid #e2e8f0;
+      padding-bottom: 8px;
+    }
+    .modal-title { font-size: 16px; font-weight: 800; color: #0f172a; }
+    .modal-close-btn {
+      background: none;
+      border: none;
+      font-size: 20px;
+      color: #94a3b8;
+      cursor: pointer;
+    }
+
+    #toast {
+      position: fixed;
+      bottom: calc(env(safe-area-inset-bottom, 20px) + 28px);
+      left: 50%;
+      transform: translateX(-50%) translateY(0);
+      background: rgba(15, 23, 42, 0.96) !important;
+      backdrop-filter: blur(20px);
+      -webkit-backdrop-filter: blur(20px);
+      color: #F8FAFC !important;
+      border: 1.5px solid #CCFF00 !important;
+      box-shadow: 0 10px 30px rgba(0, 0, 0, 0.7), 0 0 20px rgba(204, 255, 0, 0.35) !important;
+      padding: 12px 24px;
+      border-radius: 24px;
+      font-size: 14px;
+      font-weight: 800;
+      opacity: 0;
+      transition: opacity 0.25s, transform 0.25s;
+      pointer-events: none;
+      z-index: 9999999 !important;
+    }
+    #toast.show { opacity: 1; transform: translateX(-50%) translateY(-6px); }
+    .hidden { display: none !important; }
+  
+    /* ================================================================= */
+    /* 🎾 COURTSIDE PRO (US OPEN & WIMBLEDON NIGHT SESSION) THEME ENGINE */
+    /* ================================================================= */
+    @import url('https://fonts.googleapis.com/css2?family=Pretendard:wght@400;600;700;800;900&family=JetBrains+Mono:wght@600;700;800&display=swap');
+    
+    html {
+      max-width: 100%;
+      overflow-x: hidden;
+      background-color: #0B120F !important;
+    }
+    body {
+      font-family: 'Pretendard', -apple-system, BlinkMacSystemFont, sans-serif !important;
+      background-color: #0B120F !important;
+      color: #F1F5F3 !important;
+      letter-spacing: -0.2px;
+      max-width: 100%;
+      overflow-x: hidden;
+    }
+    .container {
+      max-width: 680px !important;
+      width: 100%;
+      box-sizing: border-box;
+      overflow-x: hidden;
+    }
+
+    /* 🎾 Header (Mobile Slim, Notch Safe Area) */
+    .header {
+      background: rgba(14, 23, 19, 0.95) !important;
+      backdrop-filter: blur(20px) !important;
+      -webkit-backdrop-filter: blur(20px) !important;
+      border-bottom: 1px solid rgba(255, 255, 255, 0.08) !important;
+      padding-top: calc(0.65rem + env(safe-area-inset-top)) !important;
+      box-shadow: 0 8px 30px rgba(0, 0, 0, 0.4) !important;
+    }
+    .logo-icon {
+      background: radial-gradient(circle at 30% 30%, #34D399, #065F46) !important;
+      border-radius: 12px !important;
+      box-shadow: 0 4px 16px rgba(16, 185, 129, 0.3) !important;
+      border: 1px solid rgba(255, 255, 255, 0.2) !important;
+    }
+    .logo-text h1 { color: #FFFFFF !important; font-weight: 900 !important; }
+    .logo-text p { color: #8C9B93 !important; font-weight: 600 !important; }
+    .btn-header {
+      background: #14201A !important;
+      border: 1px solid rgba(255, 255, 255, 0.1) !important;
+      color: #D1DDD6 !important;
+      border-radius: 10px !important;
+    }
+    .btn-header:hover {
+      background: #1B2B23 !important;
+      color: #FFFFFF !important;
+      border-color: rgba(16, 185, 129, 0.3) !important;
+    }
+    .btn-header .btn-text { display: none !important; }
+    @media (min-width: 540px) {
+      .btn-header .btn-text { display: inline !important; }
+    }
+
+    /* 📊 Top Stat Cards */
+    .stat-card {
+      background: #121B17 !important;
+      border: 1px solid rgba(255, 255, 255, 0.08) !important;
+      border-radius: 16px !important;
+      box-shadow: 0 4px 20px rgba(0, 0, 0, 0.25) !important;
+    }
+    .stat-label { color: #8C9B93 !important; font-weight: 700 !important; }
+    .stat-val {
+      color: #FFFFFF !important;
+      font-weight: 900 !important;
+      font-family: 'JetBrains Mono', monospace !important;
+    }
+    .stat-val.green { color: #34D399 !important; text-shadow: none !important; }
+    .stat-val.blue { color: #38BDF8 !important; }
+    .stat-val.amber { color: #FBBF24 !important; }
+
+    /* 🎾 Navigation Tabs (Smooth Swipeable) */
+    .nav-tabs-wrapper {
+      width: 100%;
+      max-width: 100%;
+      overflow-x: auto !important;
+      -webkit-overflow-scrolling: touch;
+      margin-top: 14px;
+      scrollbar-width: none;
+    }
+    .nav-tabs-wrapper::-webkit-scrollbar { display: none; }
+    .nav-tabs {
+      display: inline-flex !important;
+      background: #0E1612 !important;
+      padding: 4px !important;
+      border-radius: 14px !important;
+      border: 1px solid rgba(255, 255, 255, 0.08) !important;
+      gap: 4px !important;
+      min-width: 100% !important;
+      width: max-content !important;
+    }
+    .nav-tab {
+      background: transparent !important;
+      color: #8C9B93 !important;
+      font-weight: 700 !important;
+      border-radius: 10px !important;
+      padding: 8px 12px !important;
+      white-space: nowrap !important;
+      border: none !important;
+      transition: all 0.15s ease;
+    }
+    .nav-tab:hover { color: #FFFFFF !important; background: rgba(255, 255, 255, 0.04) !important; }
+    .nav-tab.active {
+      background: linear-gradient(135deg, #10B981, #059669) !important;
+      color: #FFFFFF !important;
+      font-weight: 800 !important;
+      box-shadow: 0 4px 15px rgba(16, 185, 129, 0.35) !important;
+    }
+
+    /* ✍️ Form Card Substrate */
+    .card {
+      background: #121B17 !important;
+      border: 1px solid rgba(255, 255, 255, 0.08) !important;
+      border-radius: 18px !important;
+      color: #F1F5F3 !important;
+      box-shadow: 0 8px 30px rgba(0, 0, 0, 0.25) !important;
+    }
+    .form-label { color: #A3B3AA !important; font-weight: 700 !important; }
+
+    /* 🎾 Activity Category Buttons */
+    .category-grid {
+      display: grid !important;
+      grid-template-columns: repeat(3, 1fr) !important;
+      gap: 8px !important;
+    }
+    .cat-btn {
+      background: #14201A !important;
+      border: 1px solid rgba(255, 255, 255, 0.1) !important;
+      color: #8C9B93 !important;
+      border-radius: 12px !important;
+      padding: 11px 6px !important;
+      font-weight: 700 !important;
+      font-size: 13px !important;
+      display: flex !important;
+      align-items: center !important;
+      justify-content: center !important;
+      gap: 6px !important;
+      cursor: pointer !important;
+      transition: all 0.15s ease !important;
+    }
+    .cat-btn:hover { border-color: rgba(16, 185, 129, 0.3) !important; color: #FFFFFF !important; }
+    .cat-btn.active {
+      border-color: #34D399 !important;
+      background: rgba(16, 185, 129, 0.12) !important;
+      color: #34D399 !important;
+      font-weight: 800 !important;
+      box-shadow: 0 0 14px rgba(16, 185, 129, 0.25) !important;
+    }
+
+    /* 🏆 경기 결과 버튼 (Game Result Buttons - 100% Fixed!) */
+    .grid-3 {
+      display: grid !important;
+      grid-template-columns: repeat(3, 1fr) !important;
+      gap: 8px !important;
+      margin-bottom: 10px !important;
+    }
+    .result-btn {
+      background: #14201A !important;
+      border: 1px solid rgba(255, 255, 255, 0.1) !important;
+      color: #A3B3AA !important;
+      border-radius: 12px !important;
+      padding: 11px 6px !important;
+      font-size: 13px !important;
+      font-weight: 700 !important;
+      cursor: pointer !important;
+      text-align: center !important;
+      display: flex !important;
+      align-items: center !important;
+      justify-content: center !important;
+      gap: 4px !important;
+      transition: all 0.2s ease !important;
+    }
+    .result-btn:hover { border-color: rgba(255, 255, 255, 0.25) !important; color: #FFFFFF !important; }
+    .result-btn.active-win {
+      border-color: #10B981 !important;
+      background: rgba(16, 185, 129, 0.2) !important;
+      color: #34D399 !important;
+      font-weight: 800 !important;
+      box-shadow: 0 0 14px rgba(16, 185, 129, 0.35) !important;
+    }
+    .result-btn.active-loss {
+      border-color: #EF4444 !important;
+      background: rgba(239, 68, 68, 0.2) !important;
+      color: #F87171 !important;
+      font-weight: 800 !important;
+      box-shadow: 0 0 14px rgba(239, 68, 68, 0.35) !important;
+    }
+    .result-btn.active-draw {
+      border-color: #F59E0B !important;
+      background: rgba(245, 158, 11, 0.2) !important;
+      color: #FBBF24 !important;
+      font-weight: 800 !important;
+      box-shadow: 0 0 14px rgba(245, 158, 11, 0.35) !important;
+    }
+
+    /* 🎯 집중 훈련 기술 다중 선택 (Multi-select Skill Chips - 100% Fixed!) */
+    .skill-chips-grid {
+      display: grid !important;
+      grid-template-columns: repeat(2, 1fr) !important;
+      gap: 8px !important;
+      margin-top: 8px !important;
+    }
+    @media (min-width: 480px) {
+      .skill-chips-grid {
+        grid-template-columns: repeat(4, 1fr) !important;
+      }
+    }
+    .skill-chip {
+      background: #14201A !important;
+      border: 1px solid rgba(255, 255, 255, 0.1) !important;
+      border-radius: 12px !important;
+      padding: 10px 8px !important;
+      font-size: 12.5px !important;
+      font-weight: 600 !important;
+      color: #A3B3AA !important;
+      cursor: pointer !important;
+      text-align: center !important;
+      display: flex !important;
+      align-items: center !important;
+      justify-content: center !important;
+      gap: 5px !important;
+      transition: all 0.15s ease !important;
+      user-select: none !important;
+    }
+    .skill-chip:hover {
+      border-color: rgba(16, 185, 129, 0.3) !important;
+      color: #FFFFFF !important;
+      background: #1B2B23 !important;
+    }
+    .skill-chip.selected {
+      background: rgba(16, 185, 129, 0.14) !important;
+      border-color: #34D399 !important;
+      color: #34D399 !important;
+      font-weight: 800 !important;
+      box-shadow: 0 0 14px rgba(16, 185, 129, 0.25) !important;
+    }
+
+    /* Dynamic Boxes */
+    .dynamic-box {
+      background: #121B17 !important;
+      border: 1px solid rgba(255, 255, 255, 0.08) !important;
+      border-radius: 16px !important;
+      padding: 14px !important;
+    }
+    .dynamic-box.blue {
+      border-color: rgba(56, 189, 248, 0.25) !important;
+      background: rgba(14, 28, 38, 0.7) !important;
+    }
+
+    /* Form Inputs, Selects, Textareas */
+    .form-input, .form-select, .form-textarea {
+      background: #0B120F !important;
+      border: 1px solid rgba(255, 255, 255, 0.12) !important;
+      border-radius: 12px !important;
+      padding: 10px 12px !important;
+      font-size: 13.5px !important;
+      color: #FFFFFF !important;
+    }
+    .form-input:focus, .form-select:focus, .form-textarea:focus {
+      border-color: #34D399 !important;
+      box-shadow: 0 0 0 2px rgba(16, 185, 129, 0.15) !important;
+    }
+
+    /* RPE Slider */
+    input[type="range"] {
+      background: #14201A !important;
+      border: 1px solid rgba(255, 255, 255, 0.1) !important;
+    }
+    input[type="range"]::-webkit-slider-thumb {
+      background: #34D399 !important;
+      box-shadow: 0 0 10px rgba(16, 185, 129, 0.6) !important;
+      border: 2px solid #0B120F !important;
+    }
+
+    /* Submit Button */
+    .submit-btn {
+      background: linear-gradient(135deg, #10B981, #059669) !important;
+      color: #FFFFFF !important;
+      border-radius: 14px !important;
+      font-size: 15px !important;
+      font-weight: 800 !important;
+      box-shadow: 0 6px 20px rgba(16, 185, 129, 0.35) !important;
+      border: none !important;
+    }
+
+    /* Feed Log Items */
+    .log-item {
+      background: #121B17 !important;
+      border: 1px solid rgba(255, 255, 255, 0.08) !important;
+      border-radius: 18px !important;
+      color: #FFFFFF !important;
+    }
+    .log-title { color: #FFFFFF !important; font-weight: 800 !important; }
+    .log-notes { color: #D1DDD6 !important; }
+    .filter-pill {
+      background: #121B17 !important;
+      border: 1px solid rgba(255, 255, 255, 0.1) !important;
+      color: #8C9B93 !important;
+    }
+    .filter-pill.active {
+      background: #10B981 !important;
+      color: #FFFFFF !important;
+      font-weight: 800 !important;
+      box-shadow: 0 2px 8px rgba(16, 185, 129, 0.3) !important;
+    }
+
+    /* Strings & AI Cards */
+    .string-hero-card, .video-hero-card {
+      background: radial-gradient(circle at 80% 20%, #173322, #121B17 80%) !important;
+      border: 1px solid rgba(16, 185, 129, 0.2) !important;
+    }
+    .string-hero-title, .video-hero-title { color: #34D399 !important; font-weight: 800 !important; }
+    .string-hero-racket, .video-hero-headline { color: #FFFFFF !important; }
+    .string-hero-spec, .video-hero-desc { color: #8C9B93 !important; }
+    .string-m-val { color: #FFFFFF !important; font-family: 'JetBrains Mono', monospace !important; }
+    .string-progress-fill { background: linear-gradient(90deg, #10B981, #34D399) !important; }
+    .string-history-card {
+      background: #121B17 !important;
+      border: 1px solid rgba(255, 255, 255, 0.08) !important;
+    }
+
+    /* Modals */
+    .modal-overlay { background: rgba(0, 0, 0, 0.85) !important; }
+    .modal-content {
+      background: #121B17 !important;
+      border: 1px solid rgba(255, 255, 255, 0.12) !important;
+      color: #FFFFFF !important;
+    }
+
+    /* 🚨 CRITICAL: ABSOLUTE TAB HIDDEN PRESERVATION */
+    .hidden {
+      display: none !important;
+    }
+
+  
+    /* ================================================================= */
+    /* 🎯 ULTRA READABILITY & DESIGN UNIFICATION (USER FEEDBACK FIXES)   */
+    /* ================================================================= */
+
+    /* 📊 1. 상단 통계 카드 글씨체 통일화 (Point 3 Fix) */
+    .stat-card {
+      background: #121B17 !important;
+      border: 1px solid rgba(255, 255, 255, 0.08) !important;
+      border-radius: 16px !important;
+      padding: 13px 14px !important;
+      box-shadow: 0 4px 20px rgba(0, 0, 0, 0.25) !important;
+    }
+    .stat-label {
+      font-size: 11px !important;
+      color: #8C9B93 !important;
+      font-weight: 700 !important;
+      letter-spacing: -0.2px !important;
+      margin-bottom: 2px !important;
+      font-family: -apple-system, BlinkMacSystemFont, "Pretendard", "Segoe UI", sans-serif !important;
+    }
+    .stat-val {
+      font-size: 21px !important;
+      font-weight: 900 !important;
+      font-family: -apple-system, BlinkMacSystemFont, "Pretendard", "Segoe UI", Roboto, sans-serif !important;
+      letter-spacing: -0.5px !important;
+      font-feature-settings: "tnum" 1 !important;
+      color: #FFFFFF !important;
+    }
+    .stat-val.green {
+      color: #34D399 !important;
+      text-shadow: 0 0 16px rgba(16, 185, 129, 0.3) !important;
+    }
+    .stat-val.blue {
+      color: #38BDF8 !important;
+      text-shadow: 0 0 16px rgba(56, 189, 248, 0.3) !important;
+    }
+    .stat-val.amber {
+      color: #FBBF24 !important;
+      text-shadow: 0 0 16px rgba(251, 191, 36, 0.3) !important;
+    }
+
+    /* 📋 2. 일지 목록 디자인 통일화 & 수기 메모 가독성 극대화 (Point 1 Fix) */
+    .log-item {
+      background: #121B17 !important;
+      border: 1px solid rgba(255, 255, 255, 0.08) !important;
+      border-radius: 18px !important;
+      padding: 16px 18px !important;
+      margin-top: 14px !important;
+      color: #FFFFFF !important;
+      box-shadow: 0 4px 20px rgba(0, 0, 0, 0.2) !important;
+    }
+    .log-title {
+      font-size: 16px !important;
+      font-weight: 800 !important;
+      color: #FFFFFF !important;
+      margin-bottom: 8px !important;
+    }
+    .log-info-row {
+      display: flex !important;
+      flex-wrap: wrap !important;
+      gap: 6px !important;
+      align-items: center !important;
+      font-size: 12px !important;
+      color: #CBD5E1 !important;
+      margin-bottom: 10px !important;
+    }
+    .info-skill {
+      background: rgba(16, 185, 129, 0.1) !important;
+      color: #34D399 !important;
+      border: 1px solid rgba(16, 185, 129, 0.25) !important;
+      border-radius: 6px !important;
+      padding: 2px 7px !important;
+      font-weight: 700 !important;
+    }
+    .btn-action {
+      background: #14201A !important;
+      border: 1px solid rgba(255, 255, 255, 0.1) !important;
+      border-radius: 8px !important;
+      font-size: 11.5px !important;
+      font-weight: 700 !important;
+      padding: 5px 9px !important;
+      cursor: pointer !important;
+      transition: all 0.15s ease !important;
+    }
+    .btn-action.edit {
+      color: #38BDF8 !important;
+      border-color: rgba(56, 189, 248, 0.3) !important;
+      background: rgba(56, 189, 248, 0.08) !important;
+    }
+    .btn-action.del {
+      color: #F87171 !important;
+      border-color: rgba(239, 68, 68, 0.3) !important;
+      background: rgba(239, 68, 68, 0.08) !important;
+    }
+
+    /* 📝 수기 메모 박스 (어두운 배경 + 선명한 고대비 화이트 본문) */
+    .log-notes {
+      background: #0E1713 !important;
+      border: 1px solid rgba(255, 255, 255, 0.08) !important;
+      border-left: 3.5px solid #34D399 !important;
+      border-radius: 12px !important;
+      padding: 12px 14px !important;
+      margin-top: 10px !important;
+      color: #E2E8F0 !important;
+      font-size: 13px !important;
+      line-height: 1.6 !important;
+      white-space: pre-wrap !important;
+    }
+    .log-notes > div:first-child {
+      color: #34D399 !important;
+      font-weight: 800 !important;
+      font-size: 12px !important;
+      margin-bottom: 4px !important;
+    }
+
+    /* 💬 댓글 박스 통일화 */
+    .comments-wrapper {
+      margin-top: 12px !important;
+      border-top: 1px dashed rgba(255, 255, 255, 0.1) !important;
+      padding-top: 10px !important;
+    }
+    .comments-header {
+      color: #8C9B93 !important;
+      font-size: 12px !important;
+      font-weight: 700 !important;
+      margin-bottom: 8px !important;
+    }
+    .comment-item {
+      background: #0E1713 !important;
+      border: 1px solid rgba(255, 255, 255, 0.08) !important;
+      border-radius: 12px !important;
+      padding: 10px 12px !important;
+      margin-bottom: 6px !important;
+    }
+    .comment-author {
+      color: #38BDF8 !important;
+      font-weight: 800 !important;
+      font-size: 12px !important;
+    }
+    .comment-time {
+      color: #64748B !important;
+      font-size: 11px !important;
+    }
+    .comment-text {
+      color: #E2E8F0 !important;
+      font-size: 13px !important;
+      margin-top: 4px !important;
+    }
+    .comment-input-author, .comment-input-text {
+      background: #0B120F !important;
+      border: 1px solid rgba(255, 255, 255, 0.15) !important;
+      color: #FFFFFF !important;
+      border-radius: 10px !important;
+      padding: 8px 12px !important;
+      font-size: 13px !important;
+    }
+    .comment-submit-btn {
+      background: #10B981 !important;
+      color: #FFFFFF !important;
+      font-weight: 800 !important;
+      border: none !important;
+      border-radius: 10px !important;
+      padding: 8px 16px !important;
+      cursor: pointer !important;
+    }
+
+    /* ✏️ 수정 모달 가독성 확보 (수정 시 기입 내용 또렷한 화이트 & 고대비) */
+    .modal-content {
+      background: #121B17 !important;
+      border: 1px solid rgba(255, 255, 255, 0.15) !important;
+      color: #FFFFFF !important;
+      border-radius: 20px !important;
+      box-shadow: 0 20px 60px rgba(0, 0, 0, 0.8) !important;
+    }
+    .modal-content input, .modal-content select, .modal-content textarea {
+      background: #0B120F !important;
+      border: 1px solid rgba(255, 255, 255, 0.18) !important;
+      color: #FFFFFF !important;
+      border-radius: 12px !important;
+      padding: 11px 13px !important;
+      font-size: 13.5px !important;
+    }
+    .modal-content input:focus, .modal-content select:focus, .modal-content textarea:focus {
+      border-color: #34D399 !important;
+      box-shadow: 0 0 0 2px rgba(16, 185, 129, 0.2) !important;
+    }
+    .modal-content textarea {
+      line-height: 1.6 !important;
+      min-height: 90px !important;
+    }
+    .edit-skill {
+      background: #14201A !important;
+      border: 1px solid rgba(255, 255, 255, 0.1) !important;
+      color: #A3B3AA !important;
+      border-radius: 10px !important;
+      padding: 8px 6px !important;
+      text-align: center !important;
+      cursor: pointer !important;
+      font-size: 12px !important;
+      transition: all 0.15s ease !important;
+    }
+    .edit-skill.active {
+      background: rgba(16, 185, 129, 0.15) !important;
+      border-color: #34D399 !important;
+      color: #34D399 !important;
+      font-weight: 800 !important;
+    }
+
+    /* 🎾 3. 스트링 교체 내역 글씨 가독성 극대화 (Point 2 Fix) */
+    .string-history-card {
+      background: #121B17 !important;
+      border: 1px solid rgba(255, 255, 255, 0.08) !important;
+      border-radius: 16px !important;
+      padding: 15px 16px !important;
+      margin-top: 10px !important;
+    }
+    .string-h-racket {
+      font-size: 15px !important;
+      font-weight: 800 !important;
+      color: #FFFFFF !important;
+      display: flex !important;
+      align-items: center !important;
+      gap: 6px !important;
+    }
+    .string-h-date {
+      font-size: 11.5px !important;
+      color: #8C9B93 !important;
+      font-family: -apple-system, BlinkMacSystemFont, "Pretendard", sans-serif !important;
+      font-weight: 600 !important;
+    }
+    .string-h-details {
+      display: flex !important;
+      gap: 10px !important;
+      flex-wrap: wrap !important;
+      margin-top: 8px !important;
+      font-size: 13px !important;
+      color: #E2E8F0 !important;
+      line-height: 1.5 !important;
+    }
+    .string-h-details span {
+      color: #CBD5E1 !important;
+    }
+    .string-h-details b {
+      color: #8C9B93 !important;
+      font-weight: 700 !important;
+    }
+    .string-h-details + div {
+      color: #A3B3AA !important;
+      font-size: 12.5px !important;
+      margin-top: 6px !important;
+      line-height: 1.5 !important;
+      background: rgba(255, 255, 255, 0.03) !important;
+      padding: 8px 10px !important;
+      border-radius: 8px !important;
+      border-left: 2px solid rgba(16, 185, 129, 0.3) !important;
+    }
+
+  </style>
+</head>
+<body>
+
+  <!-- Header -->
+  <header class="header">
+    <div class="header-inner">
+      <div class="logo-box">
+        <div class="logo-icon">🎾</div>
+        <div class="logo-text">
+          <h1>나의 테니스 일지</h1>
+          <p>Courtside Pro • 스트링 & AI</p>
+        </div>
+      </div>
+      <div class="header-actions">
+        <button class="btn-header" onclick="loadData()" title="일지 동기화">
+          <span>🔄</span>
+          <span class="btn-text">새로고침</span>
+        </button>
+        <button class="btn-header" onclick="openApiKeyModal()" title="AI 설정">
+          <span>⚙️</span>
+          <span class="btn-text">AI설정</span>
+        </button>
+        <button class="btn-header" onclick="testTelegram()" title="텔레그램 테스트">
+          <span>🔔</span>
+        </button>
+      </div>
+    </div>
+  </header>
+
+  <div class="container">
+    
+    <!-- Top Summary Stats -->
+    <div class="stats-grid">
+      <div class="stat-card">
+        <div class="stat-label">총 테니스 활동</div>
+        <div id="stat-total-workouts" class="stat-val">0 회</div>
+      </div>
+      <div class="stat-card">
+        <div class="stat-label">총 플레이 시간</div>
+        <div id="stat-total-hours" class="stat-val green">0 시간</div>
+      </div>
+      <div class="stat-card">
+        <div class="stat-label">클럽게임 전적</div>
+        <div id="stat-game-record" class="stat-val blue">0승 0패</div>
+      </div>
+      <div class="stat-card">
+        <div class="stat-label">승률</div>
+        <div id="stat-win-rate" class="stat-val amber">0%</div>
+      </div>
+    </div>
+
+    <!-- 5 Navigation Tabs -->
+    <div class="nav-tabs-wrapper"><div class="nav-tabs">
+      <button id="tab-new" class="nav-tab active" onclick="switchTab('new')">✍️ 테니스 기록</button>
+      <button id="tab-list" class="nav-tab" onclick="switchTab('list')">📋 일지 목록</button>
+      <button id="tab-charts" class="nav-tab" onclick="switchTab('charts')">📊 전적 통계</button>
+      <button id="tab-strings" class="nav-tab" onclick="switchTab('strings')">🎾 스트링 & AI</button>
+      <button id="tab-video" class="nav-tab" onclick="switchTab('video')">🎥 AI 폼 분석</button>
+    </div></div>
+
+    <!-- VIEW 1: DAILY FORM -->
+    <section id="view-new" class="card">
+      <form id="tennisForm" onsubmit="handleSubmit(event)">
+        <!-- Category Selector -->
+        <div>
+          <label class="form-label">활동 구분</label>
+          <div class="category-grid">
+            <button type="button" data-cat="레슨" class="cat-btn active" onclick="selectCategory('레슨')">
+              <span class="icon">🎾</span>
+              <span>레슨</span>
+            </button>
+            <button type="button" data-cat="클럽게임" class="cat-btn" onclick="selectCategory('클럽게임')">
+              <span class="icon">🏆</span>
+              <span>클럽게임</span>
+            </button>
+            <button type="button" data-cat="랠리/연습" class="cat-btn" onclick="selectCategory('랠리/연습')">
+              <span class="icon">🎯</span>
+              <span>랠리/연습</span>
+            </button>
+          </div>
+        </div>
+
+        <!-- Date & Title -->
+        <div class="grid-2 form-group">
+          <div>
+            <label class="form-label">날짜</label>
+            <input id="inputDate" type="date" required class="form-input">
+          </div>
+          <div>
+            <label class="form-label">운동 시간 (분)</label>
+            <input id="inputDuration" type="number" min="0" value="60" required class="form-input">
+          </div>
+        </div>
+
+        <div class="form-group">
+          <label class="form-label">일지 제목</label>
+          <input id="inputTitle" type="text" placeholder="예: 주말 클럽 월례대회 단식/복식" class="form-input">
+        </div>
+
+        <!-- RPE -->
+        <div class="form-group">
+          <div style="display:flex; justify-content:space-between;">
+            <label class="form-label">운동 강도 (RPE)</label>
+            <span id="rpeText" style="font-size:12px; font-weight:700; color:#16a34a;">6 / 10</span>
+          </div>
+          <input id="inputIntensity" type="range" min="1" max="10" value="6" oninput="document.getElementById('rpeText').textContent = this.value + ' / 10'" style="width:100%; margin-top:6px;">
+        </div>
+
+        <!-- GAME SPECIFIC: RESULT & SCORE & PLAYERS -->
+        <div id="box-game" class="dynamic-box blue hidden">
+          <label class="form-label">경기 결과</label>
+          <div class="grid-3" style="margin-bottom:10px;">
+            <button type="button" id="btnResWin" class="result-btn active-win" onclick="setGameResult('승')">승리 🥇</button>
+            <button type="button" id="btnResLoss" class="result-btn" onclick="setGameResult('패')">패배 🥈</button>
+            <button type="button" id="btnResDraw" class="result-btn" onclick="setGameResult('무')">무승부 🤝</button>
+          </div>
+          <div class="form-group" style="margin-top:0; margin-bottom:10px;">
+            <label class="form-label">세부 스코어 (세트 결과)</label>
+            <input id="inputScore" type="text" placeholder="예: 6-4, 7-5" class="form-input">
+          </div>
+          <div class="form-group" style="margin-top:0; margin-bottom:2px;">
+            <label class="form-label">👥 함께한 동반자 (파트너 / 상대 선수)</label>
+            <input id="inputPlayers" type="text" placeholder="예: 파트너: 김회원 / 상대: 이회원, 박회원" class="form-input">
+          </div>
+        </div>
+
+        <!-- LESSON / PRACTICE: FOCUS SKILL CHIPS (클럽게임 시 숨김) -->
+        <div id="box-skills" class="form-group">
+          <label class="form-label">집중 훈련 기술 (다중 선택)</label>
+          <div class="skill-chips-grid">
+            <div class="skill-chip" onclick="toggleSkill(this, '포핸드 스트로크')">🎾 포핸드</div>
+            <div class="skill-chip" onclick="toggleSkill(this, '백핸드 스트로크')">🎾 백핸드</div>
+            <div class="skill-chip" onclick="toggleSkill(this, '서브 / 에이스')">🚀 서브</div>
+            <div class="skill-chip" onclick="toggleSkill(this, '발리 / 네트플레이')">⚡ 발리</div>
+            <div class="skill-chip" onclick="toggleSkill(this, '스매시 / 로브')">💥 스매시</div>
+            <div class="skill-chip" onclick="toggleSkill(this, '리턴 / 패싱')">🛡️ 리턴</div>
+            <div class="skill-chip" onclick="toggleSkill(this, '풋워크 / 체력')">👣 풋워크</div>
+            <div class="skill-chip" onclick="toggleSkill(this, '전술 / 멘탈')">🧠 경기전술</div>
+          </div>
+          <input type="hidden" id="inputFocusSkill">
+        </div>
+
+        <!-- Court & Location (인조/하드/실내/클레이 & 중구/남산/문수/야음/두왕/동서/공단/기타) -->
+        <div class="grid-2 form-group">
+          <div>
+            <label class="form-label">코트 종류</label>
+            <select id="inputCourtType" class="form-select">
+              <option value="인조잔디">인조잔디 🟩</option>
+              <option value="하드코트">하드코트 🟦</option>
+              <option value="실내코트">실내코트 🏠</option>
+              <option value="클레이코트">클레이코트 🟧</option>
+            </select>
+          </div>
+          <div>
+            <label class="form-label">테니스 구장</label>
+            <select id="selectLocation" class="form-select" onchange="handleLocationSelectChange(this.value)">
+              <option value="중구">중구 🏟️</option>
+              <option value="남산">남산 🏟️</option>
+              <option value="문수">문수 🏟️</option>
+              <option value="야음">야음 🏟️</option>
+              <option value="두왕">두왕 🏟️</option>
+              <option value="동서">동서 🏟️</option>
+              <option value="공단">공단 🏟️</option>
+              <option value="custom">✍️ 기타 (수기입력)</option>
+            </select>
+            <input id="inputLocationCustom" type="text" placeholder="구장명 직접 입력 (예: 울산대, 양산 등)" class="form-input hidden" style="margin-top:6px;">
+          </div>
+        </div>
+
+        <!-- 📝 1. 수기 작성 메모 (플레이어 직접 작성 - AI 생성 시에도 유지됨) -->
+        <div class="form-group">
+          <label class="form-label">📝 나의 운동 메모 / 타구 소감 (수기 작성)</label>
+          <textarea id="inputNotes" rows="3" placeholder="오늘 경기 소감, 라켓 타구감, 잘된 점이나 보완할 점을 자유롭게 적어보세요. (수기로 적은 내용은 지워지지 않고 안전하게 저장됩니다)" class="form-textarea"></textarea>
+        </div>
+
+        <!-- 🤖 2. GEMINI AI 코칭 분석 전용 창 -->
+        <div class="form-group">
+          <div class="ai-coach-bar">
+            <span style="font-size:12px; font-weight:700; color:#065f46;">🤖 Gemini AI 코칭 분석 (별도 생성)</span>
+            <button type="button" id="btnAiCoach" class="ai-coach-btn" onclick="generateTennisAiSummary()">
+              <span>✨ AI 훈련 분석 & 코칭 생성</span>
+            </button>
+          </div>
+          <textarea id="inputAiSummary" rows="5" placeholder="위 'AI 코칭 생성' 버튼을 누르면 훈련 데이터와 수기 메모를 바탕으로 맞춤형 코칭 피드백(5~8줄)이 여기에 자동 작성됩니다!" class="form-textarea" style="background:#f0fdf4; border-color:#a7f3d0;"></textarea>
+        </div>
+
+        <!-- Multi Photo/Video Upload -->
+        <div class="form-group">
+          <label class="form-label">📸 테니스 사진 / 동영상 첨부</label>
+          <label for="inputPhoto" class="photo-upload-btn">
+            <span>📷 사진 / 동영상 추가하기 (+ 선택)</span>
+          </label>
+          <input type="file" id="inputPhoto" accept="image/*,video/*" multiple style="display:none;" onchange="handlePhotosSelect(event)">
+          <div id="photosPreviewGrid" class="photos-preview-grid hidden"></div>
+        </div>
+
+        <!-- Submit Button -->
+        <button id="submitBtn" type="submit" class="submit-btn">
+          ✨ 테니스 일지 저장하기
+        </button>
+      </form>
+    </section>
+
+    <!-- VIEW 2: LOG LIST -->
+    <section id="view-list" class="hidden">
+      <div class="filter-scroll">
+        <button class="filter-pill active" onclick="filterLogs('all')">전체</button>
+        <button class="filter-pill" onclick="filterLogs('레슨')">🎾 레슨</button>
+        <button class="filter-pill" onclick="filterLogs('클럽게임')">🏆 클럽게임</button>
+        <button class="filter-pill" onclick="filterLogs('랠리/연습')">🎯 랠리/연습</button>
+      </div>
+
+      <div id="logsContainer" style="margin-top: 10px;">
+        <div style="text-align:center; padding:30px; color:#94a3b8; font-size:14px;">데이터를 불러오는 중입니다...</div>
+      </div>
+    </section>
+
+    <!-- VIEW 3: CHARTS -->
+    <section id="view-charts" class="hidden">
+      <div class="chart-box">
+        <div class="chart-title">📊 월별 테니스 활동 추세</div>
+        <div class="chart-container">
+          <canvas id="chartActivity"></canvas>
+        </div>
+      </div>
+
+      <div class="chart-box">
+        <div class="chart-title">🏆 클럽게임 승패 비율</div>
+        <div class="chart-container">
+          <canvas id="chartWinLoss"></canvas>
+        </div>
+      </div>
+    </section>
+
+    <!-- VIEW 4: 🎾 STRING MANAGEMENT & AI DIAGNOSIS -->
+    <section id="view-strings" class="hidden">
+      
+      <!-- String Hero Dashboard -->
+      <div class="string-hero-card">
+        <div class="string-hero-title">🎾 현재 장착 스트링 현황</div>
+        <div class="string-hero-racket">
+          <span id="strHeroRacket">라켓 미지정</span>
+          <button type="button" class="btn-header" style="font-size:11px; padding:4px 8px; background:rgba(255,255,255,0.25); color:#ffffff;" onclick="openStringModal()">➕ 교체 등록</button>
+        </div>
+        <div class="string-hero-spec">
+          <span id="strHeroName" class="string-spec-tag">스트링 미등록</span>
+          <span id="strHeroType" class="string-spec-tag">폴리</span>
+          <span id="strHeroTension" class="string-spec-tag">50 lbs</span>
+          <span id="strHeroDate" class="string-spec-tag">교체일: -</span>
+        </div>
+
+        <div class="string-metrics-grid">
+          <div>
+            <div class="string-m-label">경과 일수</div>
+            <div id="strHeroDays" class="string-m-val">0 일차</div>
+          </div>
+          <div>
+            <div class="string-m-label">누적 플레이</div>
+            <div id="strHeroHours" class="string-m-val">0 시간</div>
+          </div>
+          <div>
+            <div class="string-m-label">누적 세션</div>
+            <div id="strHeroSessions" class="string-m-val">0 회</div>
+          </div>
+        </div>
+
+        <!-- Lifetime Progress Gauge -->
+        <div class="string-progress-wrapper">
+          <div class="string-progress-info">
+            <span>동호인 권장 스트링 수명 (약 2~3개월 기준)</span>
+            <span id="strHeroPercent">0%</span>
+          </div>
+          <div class="string-progress-bg">
+            <div id="strHeroBar" class="string-progress-fill safe" style="width: 0%;"></div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Big AI Diagnosis Button -->
+      <button type="button" id="btnAiStringDiagnose" class="btn-ai-diagnose" onclick="runAiStringDiagnosis()">
+        <span>✨ AI 스트링 교체 시점 & 텐션 로스 정밀 진단</span>
+      </button>
+
+      <!-- AI Diagnosis Result Display Box -->
+      <div id="aiStringResultBox" class="ai-analysis-result-box hidden">
+        <div class="ai-result-header">
+          <div class="ai-result-title">
+            <span>🤖 Gemini 3.6 Flash 스트링 수명 진단 리포트</span>
+          </div>
+          <button type="button" class="modal-close-btn" onclick="document.getElementById('aiStringResultBox').classList.add('hidden')">✕</button>
+        </div>
+        <div id="aiStringResultContent" class="ai-result-body"></div>
+      </div>
+
+      <!-- Past String Replacement History -->
+      <div style="margin-top:20px;">
+        <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:8px;">
+          <h3 style="font-size:14px; font-weight:800; color:#0f172a;">📜 스트링 교체 히스토리</h3>
+          <button type="button" class="btn-header" style="font-size:11px;" onclick="openStringModal()">➕ 교체 기록 추가</button>
+        </div>
+        <div id="stringHistoryContainer">
+          <div style="text-align:center; padding:20px; color:#94a3b8; font-size:12px;">등록된 스트링 교체 이력이 없습니다.</div>
+        </div>
+      </div>
+
+    </section>
+
+    <!-- VIEW 5: 🎥 AI VIDEO FORM ANALYSIS -->
+    <section id="view-video" class="hidden">
+      <!-- Hero Banner -->
+      <div class="video-hero-card">
+        <div class="video-hero-title">🎾 Gemini Multimodal AI Coach</div>
+        <div class="video-hero-headline">AI 비디오 폼 정밀 분석</div>
+        <div class="video-hero-desc">
+          스마트폰으로 촬영한 10~30초 테니스(서브, 포핸드, 백핸드, 발리) 또는 러닝 폼 영상을 업로드하시면 Gemini AI가 프레임 단위 타점, 궤적, 관절 각도, 착지 패턴을 시각적 타임스탬프와 함께 전문 코치 수준으로 분석해 드립니다.
+        </div>
+      </div>
+
+      <div class="card">
+        <!-- 1. Motion Type Selection -->
+        <div>
+          <label class="form-label">분석할 동작 유형</label>
+          <div class="motion-type-grid">
+            <button type="button" class="motion-btn active" data-motion="테니스 - 서브 (Serve)" onclick="selectMotionType(this)">🎾 테니스 - 서브</button>
+            <button type="button" class="motion-btn" data-motion="테니스 - 포핸드 스트로크 (Forehand)" onclick="selectMotionType(this)">🎾 테니스 - 포핸드</button>
+            <button type="button" class="motion-btn" data-motion="테니스 - 백핸드 스트로크 (Backhand)" onclick="selectMotionType(this)">🎾 테니스 - 백핸드</button>
+            <button type="button" class="motion-btn" data-motion="테니스 - 발리 & 스매시 (Volley/Smash)" onclick="selectMotionType(this)">🎾 테니스 - 발리/스매시</button>
+            <button type="button" class="motion-btn" data-motion="러닝 - 주행 폼 & 착지 (Running Form)" onclick="selectMotionType(this)">🏃 러닝 - 주행 폼</button>
+            <button type="button" class="motion-btn" data-motion="트레일러닝 - 오르막/내리막 주법" onclick="selectMotionType(this)">🌲 트레일러닝</button>
+          </div>
+          <input type="hidden" id="selectedMotionType" value="테니스 - 서브 (Serve)">
+        </div>
+
+        <!-- 2. Video Upload & Dropzone -->
+        <div class="form-group">
+          <label class="form-label">동영상 업로드 (10~30초 권장, 최대 30MB)</label>
+          <div class="video-dropzone" id="videoDropzone" onclick="document.getElementById('videoFileInput').click()">
+            <div class="video-dropzone-icon">📹</div>
+            <div class="video-dropzone-text">동영상 파일 선택 또는 여기에 드래그</div>
+            <div class="video-dropzone-sub">스마트폰 촬영 영상 (MP4, MOV, WebM 지원)</div>
+          </div>
+          <input type="file" id="videoFileInput" accept="video/*" style="display:none;" onchange="handleVideoSelect(event)">
+        </div>
+
+        <!-- Video Player Preview -->
+        <div id="videoPreviewContainer" class="video-player-box hidden">
+          <video id="formVideoPlayer" controls playsinline preload="metadata"></video>
+          <div class="video-meta-bar">
+            <span id="videoFileName">video.mp4</span>
+            <span id="videoFileSize">0 MB</span>
+          </div>
+        </div>
+
+        <!-- 3. Focus Checklist Chips & Custom Question -->
+        <div class="form-group">
+          <label class="form-label">중점 점검 요청사항 (선택)</label>
+          <div style="margin-bottom:6px;">
+            <span class="focus-chip" onclick="toggleFocusChip(this, '임팩트 타점 높이 및 몸 앞 위치')">🎯 타점 위치/높이</span>
+            <span class="focus-chip" onclick="toggleFocusChip(this, '라켓 헤드 드롭 및 스윙 궤적')">⚡ 라켓 궤적</span>
+            <span class="focus-chip" onclick="toggleFocusChip(this, '무릎 굽힘 및 하체 체중 이동')">🦵 하체/무릎 굽힘</span>
+            <span class="focus-chip" onclick="toggleFocusChip(this, '손목/팔꿈치 엘보 부상 위험도')">⚠️ 손목/엘보 부하</span>
+            <span class="focus-chip" onclick="toggleFocusChip(this, '러닝 착지 패턴(미드풋/힐) 및 오버스트라이드')">👣 러닝 착지/보폭</span>
+          </div>
+          <input type="text" id="inputVideoFocusNotes" placeholder="예: 서브 토스 높이가 적절한지, 임팩트 때 손목 꺾임이 심한지 봐주세요" class="form-input">
+        </div>
+
+        <!-- 4. AI Model Preference Option -->
+        <div class="form-group">
+          <div class="grid-2">
+            <div>
+              <label class="form-label">AI 분석 엔진</label>
+              <select id="selectVideoAiModel" class="form-select">
+                <option value="pro">Gemini Pro (정밀 심층 분석 ⭐ 추천)</option>
+                <option value="flash">Gemini Flash (초고속 분석)</option>
+              </select>
+            </div>
+            <div>
+              <label class="form-label">API Key 상태</label>
+              <button type="button" class="btn-header" style="width:100%; height:42px; justify-content:center;" onclick="openApiKeyModal()">
+                ⚙️ API Key 설정 점검
+              </button>
+            </div>
+          </div>
+        </div>
+
+        <!-- 5. Big Action Button -->
+        <button type="button" id="btnRunVideoAnalysis" class="btn-run-video-analysis" onclick="runVideoFormAnalysis()">
+          <span>✨ Gemini AI 비디오 폼 정밀 분석 시작</span>
+        </button>
+
+        <!-- Progress Box -->
+        <div id="videoProgressBox" class="hidden" style="margin-top:14px; background:#eff6ff; border:1px solid #bfdbfe; border-radius:12px; padding:12px; text-align:center;">
+          <div style="font-size:13px; font-weight:700; color:#1d4ed8;" id="videoProgressText">⏳ 동영상 인코딩 및 Gemini AI Vision 분석 준비 중...</div>
+          <div style="font-size:11px; color:#64748b; margin-top:4px;">비디오 프레임 추출 및 바이오메카닉스 분석에 약 10~25초가 소요됩니다. 잠시만 기다려주세요! 🎾✨</div>
+        </div>
+
+        <!-- 6. Structured Coaching Report Card -->
+        <div id="videoAnalysisResultCard" class="video-result-card hidden">
+          <div class="video-result-header">
+            <div>
+              <span style="font-size:14px; font-weight:800; color:#312e81;">🤖 Gemini Pro 비디오 폼 코칭 리포트</span>
+              <div id="videoResultMotionSub" style="font-size:11px; color:#64748b; margin-top:2px;">테니스 - 서브 동작 분석</div>
+            </div>
+            <button type="button" class="btn-header" style="font-size:11px; padding:4px 8px;" onclick="copyVideoReport()">📋 텍스트 복사</button>
+          </div>
+          
+          <div id="videoAnalysisResultContent" class="video-result-content"></div>
+
+          <div style="display:flex; gap:8px; margin-top:14px; border-top:1px dashed #e2e8f0; padding-top:10px;">
+            <button type="button" class="btn-header" style="flex:1; justify-content:center; background:#f0fdf4; color:#15803d; border-color:#bbf7d0;" onclick="applyVideoReportToDailyLog()">
+              ✍️ 오늘 테니스 일지에 피드백 반영하기
+            </button>
+          </div>
+        </div>
+
+      </div>
+    </section>
+
+  </div>
+
+  <!-- ➕ STRING REPLACEMENT MODAL -->
+  <div id="stringModal" class="modal-overlay hidden">
+    <div class="modal-content">
+      <div class="modal-header">
+        <div class="modal-title">🎾 새 스트링 교체 등록</div>
+        <button type="button" class="modal-close-btn" onclick="closeStringModal()">✕</button>
+      </div>
+
+      <form id="stringForm" onsubmit="handleStringSubmit(event)">
+        <div class="grid-2 form-group">
+          <div>
+            <label class="form-label">교체 일자</label>
+            <input id="strInputDate" type="date" required class="form-input">
+          </div>
+          <div>
+            <label class="form-label">라켓 모델명</label>
+            <input id="strInputRacket" type="text" placeholder="예: 윌슨 블레이드 98 v9" required class="form-input">
+          </div>
+        </div>
+
+        <div class="grid-2 form-group">
+          <div>
+            <label class="form-label">스트링 제품명</label>
+            <input id="strInputName" type="text" placeholder="예: 럭실론 알루파워 1.25" required class="form-input">
+          </div>
+          <div>
+            <label class="form-label">스트링 종류</label>
+            <select id="strInputType" class="form-select">
+              <option value="폴리">폴리 (Polyester)</option>
+              <option value="인조쉽">인조쉽 (Multifilament)</option>
+              <option value="천연쉽">천연쉽 (Natural Gut)</option>
+              <option value="하이브리드">하이브리드 (Hybrid)</option>
+            </select>
+          </div>
+        </div>
+
+        <div class="grid-2 form-group">
+          <div>
+            <label class="form-label">세팅 텐션 (lbs)</label>
+            <input id="strInputTension" type="text" placeholder="예: 52/50 또는 50" required class="form-input">
+          </div>
+          <div>
+            <label class="form-label">교체 비용 (원)</label>
+            <input id="strInputCost" type="number" placeholder="예: 25000" class="form-input">
+          </div>
+        </div>
+
+        <div class="form-group">
+          <label class="form-label">스트링샵 / 매장명</label>
+          <input id="strInputShop" type="text" placeholder="예: 동대문 테니스 전문점" class="form-input">
+        </div>
+
+        <div class="form-group">
+          <label class="form-label">메모 / 특이사항</label>
+          <textarea id="strInputNotes" rows="2" placeholder="예: 텐션을 2파운드 낮춤, 스핀력 테스트용" class="form-textarea"></textarea>
+        </div>
+
+        <div style="display:flex; gap:8px; margin-top:16px;">
+          <button type="button" class="btn-header" style="flex:1; justify-content:center;" onclick="closeStringModal()">취소</button>
+          <button type="submit" id="btnSaveString" class="submit-btn" style="flex:2; margin-top:0;">저장하기</button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <!-- ✏️ EDIT TENNIS LOG MODAL -->
+  <div id="editTennisModal" class="modal-overlay hidden">
+    <div class="modal-content" style="max-width: 520px;">
+      <div class="modal-header">
+        <div class="modal-title">✏️ 테니스 일지 수정</div>
+        <button type="button" class="modal-close-btn" onclick="closeEditTennisModal()">✕</button>
+      </div>
+
+      <form id="editTennisForm" onsubmit="handleEditTennisSubmit(event)">
+        <input type="hidden" id="editRowIndex">
+        
+        <!-- Category Selector -->
+        <div>
+          <label class="form-label">활동 구분</label>
+          <div class="category-grid">
+            <button type="button" data-editcat="레슨" class="cat-btn active" onclick="selectEditCategory('레슨')">
+              <span class="icon">🎾</span>
+              <span>레슨</span>
+            </button>
+            <button type="button" data-editcat="클럽게임" class="cat-btn" onclick="selectEditCategory('클럽게임')">
+              <span class="icon">🏆</span>
+              <span>클럽게임</span>
+            </button>
+            <button type="button" data-editcat="랠리/연습" class="cat-btn" onclick="selectEditCategory('랠리/연습')">
+              <span class="icon">🎯</span>
+              <span>랠리/연습</span>
+            </button>
+          </div>
+        </div>
+
+        <!-- Date & Duration -->
+        <div class="grid-2 form-group">
+          <div>
+            <label class="form-label">날짜</label>
+            <input id="editDate" type="date" required class="form-input">
+          </div>
+          <div>
+            <label class="form-label">운동 시간 (분)</label>
+            <input id="editDuration" type="number" min="0" required class="form-input">
+          </div>
+        </div>
+
+        <div class="form-group">
+          <label class="form-label">일지 제목</label>
+          <input id="editTitle" type="text" class="form-input">
+        </div>
+
+        <!-- RPE -->
+        <div class="form-group">
+          <div style="display:flex; justify-content:space-between;">
+            <label class="form-label">운동 강도 (RPE)</label>
+            <span id="editRpeText" style="font-size:12px; font-weight:700; color:#16a34a;">6 / 10</span>
+          </div>
+          <input id="editIntensity" type="range" min="1" max="10" value="6" oninput="document.getElementById('editRpeText').textContent = this.value + ' / 10'" style="width:100%; margin-top:6px;">
+        </div>
+
+        <!-- GAME SPECIFIC: RESULT & SCORE & PLAYERS -->
+        <div id="edit-box-game" class="dynamic-box blue hidden">
+          <label class="form-label">경기 결과</label>
+          <div class="grid-3" style="margin-bottom:10px;">
+            <button type="button" id="btnEditResWin" class="result-btn active-win" onclick="setEditGameResult('승')">승리 🥇</button>
+            <button type="button" id="btnEditResLoss" class="result-btn" onclick="setEditGameResult('패')">패배 🥈</button>
+            <button type="button" id="btnEditResDraw" class="result-btn" onclick="setEditGameResult('무')">무승부 🤝</button>
+          </div>
+          <div class="form-group" style="margin-top:0; margin-bottom:10px;">
+            <label class="form-label">세부 스코어 (세트 결과)</label>
+            <input id="editScore" type="text" class="form-input">
+          </div>
+          <div class="form-group" style="margin-top:0; margin-bottom:2px;">
+            <label class="form-label">👥 함께한 동반자 (파트너 / 상대 선수)</label>
+            <input id="editPlayers" type="text" class="form-input">
+          </div>
+        </div>
+
+        <!-- LESSON / PRACTICE: FOCUS SKILL CHIPS -->
+        <div id="edit-box-skills" class="form-group">
+          <label class="form-label">집중 훈련 기술 (다중 선택)</label>
+          <div class="skill-chips-grid">
+            <div class="skill-chip edit-skill" onclick="toggleEditSkill(this, '포핸드 스트로크')">🎾 포핸드</div>
+            <div class="skill-chip edit-skill" onclick="toggleEditSkill(this, '백핸드 스트로크')">🎾 백핸드</div>
+            <div class="skill-chip edit-skill" onclick="toggleEditSkill(this, '서브 / 에이스')">🚀 서브</div>
+            <div class="skill-chip edit-skill" onclick="toggleEditSkill(this, '발리 / 네트플레이')">⚡ 발리</div>
+            <div class="skill-chip edit-skill" onclick="toggleEditSkill(this, '스매시 / 로브')">💥 스매시</div>
+            <div class="skill-chip edit-skill" onclick="toggleEditSkill(this, '리턴 / 패싱')">🛡️ 리턴</div>
+            <div class="skill-chip edit-skill" onclick="toggleEditSkill(this, '풋워크 / 체력')">👣 풋워크</div>
+            <div class="skill-chip edit-skill" onclick="toggleEditSkill(this, '전술 / 멘탈')">🧠 경기전술</div>
+          </div>
+          <input type="hidden" id="editFocusSkill">
+        </div>
+
+        <!-- Court & Location -->
+        <div class="grid-2 form-group">
+          <div>
+            <label class="form-label">코트 종류</label>
+            <select id="editCourtType" class="form-select">
+              <option value="인조잔디">인조잔디 🟩</option>
+              <option value="하드코트">하드코트 🟦</option>
+              <option value="실내코트">실내코트 🏠</option>
+              <option value="클레이코트">클레이코트 🟧</option>
+            </select>
+          </div>
+          <div>
+            <label class="form-label">테니스 구장</label>
+            <select id="editSelectLocation" class="form-select" onchange="handleEditLocationChange(this.value)">
+              <option value="중구">중구 🏟️</option>
+              <option value="남산">남산 🏟️</option>
+              <option value="문수">문수 🏟️</option>
+              <option value="야음">야음 🏟️</option>
+              <option value="두왕">두왕 🏟️</option>
+              <option value="동서">동서 🏟️</option>
+              <option value="공단">공단 🏟️</option>
+              <option value="custom">✍️ 기타 (수기입력)</option>
+            </select>
+            <input id="editLocationCustom" type="text" placeholder="구장명 직접 입력" class="form-input hidden" style="margin-top:6px;">
+          </div>
+        </div>
+
+        <!-- Notes -->
+        <div class="form-group">
+          <label class="form-label">📝 나의 운동 메모 / 타구 소감</label>
+          <textarea id="editNotes" rows="3" class="form-textarea"></textarea>
+        </div>
+
+        <!-- AI Summary -->
+        <div class="form-group">
+          <label class="form-label">🤖 Gemini AI 코칭 피드백</label>
+          <textarea id="editAiSummary" rows="4" class="form-textarea" style="background:#f0fdf4; border-color:#a7f3d0;"></textarea>
+        </div>
+
+        <!-- Photos/Videos -->
+        <div class="form-group">
+          <label class="form-label">📸 사진 / 동영상 관리</label>
+          <div id="editPhotosPreviewGrid" class="photos-preview-grid"></div>
+          <label for="editPhotoInput" class="btn-header" style="width:100%; height:38px; justify-content:center; margin-top:8px; cursor:pointer;">
+            📷 추가 사진 / 동영상 선택
+          </label>
+          <input type="file" id="editPhotoInput" accept="image/*,video/*" multiple style="display:none;" onchange="handleEditPhotoSelect(event)">
+        </div>
+
+        <div style="display:flex; gap:8px; margin-top:16px;">
+          <button type="button" class="btn-header" style="flex:1; justify-content:center;" onclick="closeEditTennisModal()">취소</button>
+          <button type="submit" id="btnEditSubmit" class="submit-btn" style="flex:2; margin-top:0;">수정 완료 저장</button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <!-- ⚙️ API KEY MODAL -->
+  <div id="apiKeyModal" class="modal-overlay hidden">
+    <div class="modal-content" style="max-width: 440px;">
+      <div class="modal-header">
+        <div class="modal-title">⚙️ Google Gemini AI 설정</div>
+        <button type="button" class="modal-close-btn" onclick="closeApiKeyModal()">✕</button>
+      </div>
+      <div style="font-size:13px; color:#475569; line-height:1.5; margin-bottom:12px;">
+        Google AI Studio의 <b>Gemini API Key</b>를 입력하시면 테니스 일지 코칭 및 스트링 수명 AI 정밀 진단이 활성화됩니다!
+      </div>
+      <form onsubmit="handleSaveApiKey(event)">
+        <div class="form-group">
+          <label class="form-label">Gemini API Key</label>
+          <input id="inputGeminiApiKey" type="password" placeholder="AQ..." class="form-input" required>
+        </div>
+        <div style="display:flex; gap:8px; margin-top:16px;">
+          <button type="button" class="btn-header" style="flex:1; justify-content:center;" onclick="closeApiKeyModal()">닫기</button>
+          <button type="submit" id="btnSaveApiKey" class="submit-btn" style="flex:2; margin-top:0;">저장하기</button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <!-- 🔍 FULLSCREEN PHOTO/VIDEO GALLERY LIGHTBOX (좌우 슬라이드 & 이전/다음 & 동영상 재생 지원) -->
+  <div id="photoModal" class="modal-overlay hidden" onclick="closePhotoModal()">
+    <div class="photo-modal-content" onclick="event.stopPropagation()">
+      <button type="button" class="photo-modal-close" onclick="closePhotoModal()">✕</button>
+      
+      <!-- Prev Button -->
+      <button type="button" id="btnPhotoPrev" class="photo-nav-btn prev" onclick="prevModalPhoto()">‹</button>
+      
+      <div class="photo-modal-img-wrap" id="photoModalWrap">
+        <img id="photoModalImg" src="" alt="확대 사진" class="photo-modal-img">
+        <video id="photoModalVideo" controls playsinline class="photo-modal-video hidden"></video>
+      </div>
+
+      <!-- Action link for high-res drive view / download -->
+      <div id="photoModalActionWrap" style="display:none; margin-top:10px;">
+        <a id="photoModalExternalLink" href="" target="_blank" class="photo-modal-link-btn">
+          <span>🎬 드라이브에서 원본 스트리밍 / 다운로드</span>
+        </a>
+      </div>
+      
+      <!-- Next Button -->
+      <button type="button" id="btnPhotoNext" class="photo-nav-btn next" onclick="nextModalPhoto()">›</button>
+      
+      <!-- Counter (e.g. 1 / 3) -->
+      <div id="photoModalCounter" class="photo-modal-counter">1 / 1</div>
+    </div>
+  </div>
+
+  <div id="toast">알림</div>
+
+  <script>
+
+    // 🌐 UNIVERSAL GAS / GITHUB PAGES BRIDGE
+    const GAS_API_URL = "https://script.google.com/macros/s/AKfycby5TLFomNV-m1K83cIyTeaCwm9JTdLN2sDQDnBLAs8ZppI2Ce0ugpX7fAlvQDahphWhGQ/exec";
+
+    function callGasApi(action, params, onSuccess, onFailure) {
+      if (typeof google !== 'undefined' && google.script && google.script.run && typeof google.script.run[action] === 'function') {
+        const runner = google.script.run
+          .withSuccessHandler(function(res) { if (onSuccess) onSuccess(res); })
+          .withFailureHandler(function(err) { if (onFailure) onFailure(err); else alert('오류: ' + (err.message || err)); });
+        
+        if (action === 'addTennisComment' && params && params.rowIndex !== undefined) {
+          runner.addTennisComment(params.rowIndex, params.commentData);
+        } else if (action === 'updateTennisComment' && params && params.rowIndex !== undefined) {
+          runner.updateTennisComment(params.rowIndex, params.commentId, params.newText);
+        } else if (action === 'deleteTennisComment' && params && params.rowIndex !== undefined) {
+          runner.deleteTennisComment(params.rowIndex, params.commentId);
+        } else if (Array.isArray(params)) {
+          runner[action].apply(runner, params);
+        } else if (params !== undefined) {
+          runner[action](params);
+        } else {
+          runner[action]();
+        }
+      } else {
+        // Running on GitHub Pages
+        if (action === 'getTennisData' || action === 'getTennisStringData') {
+          fetch(GAS_API_URL + '?action=' + action + '&t=' + Date.now())
+            .then(function(res) { return res.json(); })
+            .then(function(data) {
+              if (data && data.error) {
+                if (onFailure) onFailure(new Error(data.error));
+                else console.error('API 조회 오류:', data.error);
+              } else {
+                try {
+                  if (onSuccess) onSuccess(data);
+                } catch(cbErr) {
+                  console.error('onSuccess error:', cbErr);
+                }
+              }
+            })
+            .catch(function(err) { if (onFailure) onFailure(err); else console.error('네트워크 오류:', err); });
+        } else {
+          fetch(GAS_API_URL, {
+            method: 'POST',
+            headers: { 'Content-Type': 'text/plain;charset=utf-8' },
+            body: JSON.stringify({ action: action, payload: params })
+          })
+          .then(function(res) { return res.json(); })
+          .then(function(data) {
+            if (data && data.error) {
+              if (onFailure) onFailure(new Error(data.error));
+              else alert('실행 실패: ' + data.error);
+            } else {
+              try {
+                if (onSuccess) onSuccess(data);
+              } catch(cbErr) {
+                console.error('Success callback UI error:', cbErr);
+              }
+            }
+          })
+          .catch(function(err) { if (onFailure) onFailure(err); else alert('네트워크 오류: ' + (err.message || err)); });
+        }
+      }
+    }
+
+    let curCategory = '레슨';
+    let curGameResult = '승';
+    let selectedSkills = [];
+    let selectedPhotos = [];
+    let allLogs = [];
+    let curFilter = 'all';
+    let curPage = 1;
+    const PAGE_SIZE = 10;
+    let monthlyTrendsData = [];
+    let chart1 = null, chart2 = null;
+
+    // String Data
+    let stringDataObj = null;
+
+    function initApp() {
+      const today = new Date().toISOString().split('T')[0];
+      const dEl = document.getElementById('inputDate');
+      if (dEl) dEl.value = today;
+      const strDEl = document.getElementById('strInputDate');
+      if (strDEl) strDEl.value = today;
+
+      // ⚡ 로컬 스토리지 캐시 우선 복원 (0초 즉시 화면 표시, 깜빡임 및 0 표기 방지)
+      try {
+        const cached = localStorage.getItem('tennis_diary_cached_data');
+        if (cached) {
+          const parsed = JSON.parse(cached);
+          if (parsed && Array.isArray(parsed.logs) && parsed.logs.length > 0) {
+            allLogs = parsed.logs;
+            monthlyTrendsData = parsed.monthly_trends || [];
+            if (typeof updateStats === 'function') updateStats(parsed.overview);
+            renderLogs();
+            if (typeof renderAllCharts === 'function') renderAllCharts();
+          }
+        }
+      } catch(e) {}
+
+      loadData(true);
+      setTimeout(loadStringData, 350);
+      if (typeof initPhotoSwipeListeners === 'function') initPhotoSwipeListeners();
+      if (typeof initVideoDropzone === 'function') initVideoDropzone();
+    }
+
+    if (document.readyState === 'loading') {
+      document.addEventListener('DOMContentLoaded', initApp);
+    } else {
+      initApp();
+    }
+
+
+    // -------------------------------------------------------------
+    // ✏️ EDIT MODAL LOGIC
+    // -------------------------------------------------------------
+    let curEditCategory = '레슨';
+    let curEditGameResult = '승';
+    let editSelectedSkills = [];
+    let editExistingPhotoIds = [];
+    let editNewPhotos = [];
+
+    function openEditTennisModal(rowIndex) {
+      const log = allLogs.find(function(l) { return l.rowIndex === rowIndex; });
+      if (!log) return;
+
+      document.getElementById('editRowIndex').value = log.rowIndex;
+      document.getElementById('editDate').value = log.date;
+      document.getElementById('editDuration').value = log.duration_minutes || 60;
+      document.getElementById('editTitle').value = log.title || '';
+      
+      const intensity = log.intensity || 6;
+      document.getElementById('editIntensity').value = intensity;
+      document.getElementById('editRpeText').textContent = intensity + ' / 10';
+
+      selectEditCategory(log.category || '레슨');
+
+      if (log.category === '클럽게임') {
+        setEditGameResult(log.result || '승');
+        document.getElementById('editScore').value = log.score || '';
+        document.getElementById('editPlayers').value = log.players || '';
+      }
+
+      // Skills
+      editSelectedSkills = log.focus_skill ? log.focus_skill.split(',').map(function(s){ return s.trim(); }).filter(Boolean) : [];
+      document.getElementById('editFocusSkill').value = editSelectedSkills.join(', ');
+      document.querySelectorAll('.edit-skill').forEach(function(chip) {
+        const text = chip.textContent.replace(/[^\uAC00-\uD7A3a-zA-Z0-9\/]/g, '').trim();
+        const active = editSelectedSkills.some(function(sk) { return sk.includes(text) || text.includes(sk); });
+        chip.classList.toggle('active', active);
+      });
+
+      // Court & Location
+      document.getElementById('editCourtType').value = log.court_type || '인조잔디';
+      
+      const loc = log.location || '중구';
+      const presetLocations = ['중구', '남산', '문수', '야음', '두왕', '동서', '공단'];
+      if (presetLocations.includes(loc)) {
+        document.getElementById('editSelectLocation').value = loc;
+        document.getElementById('editLocationCustom').classList.add('hidden');
+        document.getElementById('editLocationCustom').value = '';
+      } else {
+        document.getElementById('editSelectLocation').value = 'custom';
+        document.getElementById('editLocationCustom').classList.remove('hidden');
+        document.getElementById('editLocationCustom').value = loc;
+      }
+
+      document.getElementById('editNotes').value = log.notes || '';
+      document.getElementById('editAiSummary').value = log.ai_summary || '';
+
+      // Photos
+      editExistingPhotoIds = log.photos ? [...log.photos] : [];
+      editNewPhotos = [];
+      renderEditPhotosPreview();
+
+      document.getElementById('editTennisModal').classList.remove('hidden');
+    }
+
+    function closeEditTennisModal() {
+      document.getElementById('editTennisModal').classList.add('hidden');
+      editExistingPhotoIds = [];
+      editNewPhotos = [];
+    }
+
+    function selectEditCategory(cat) {
+      curEditCategory = cat;
+      document.querySelectorAll('[data-editcat]').forEach(function(b) {
+        b.classList.toggle('active', b.getAttribute('data-editcat') === cat);
+      });
+      document.getElementById('edit-box-game').classList.toggle('hidden', cat !== '클럽게임');
+      const skillBox = document.getElementById('edit-box-skills');
+      if (skillBox) skillBox.classList.toggle('hidden', cat === '클럽게임');
+    }
+
+    function setEditGameResult(res) {
+      curEditGameResult = res;
+      document.getElementById('btnEditResWin').className = 'result-btn' + (res === '승' ? ' active-win' : '');
+      document.getElementById('btnEditResLoss').className = 'result-btn' + (res === '패' ? ' active-loss' : '');
+      document.getElementById('btnEditResDraw').className = 'result-btn' + (res === '무' ? ' active-draw' : '');
+    }
+
+    function toggleEditSkill(chip, skillName) {
+      chip.classList.toggle('active');
+      if (chip.classList.contains('active')) {
+        if (!editSelectedSkills.includes(skillName)) editSelectedSkills.push(skillName);
+      } else {
+        editSelectedSkills = editSelectedSkills.filter(function(s) { return s !== skillName; });
+      }
+      document.getElementById('editFocusSkill').value = editSelectedSkills.join(', ');
+    }
+
+    function handleEditLocationChange(val) {
+      const customInput = document.getElementById('editLocationCustom');
+      if (val === 'custom') {
+        customInput.classList.remove('hidden');
+        customInput.focus();
+      } else {
+        customInput.classList.add('hidden');
+        customInput.value = '';
+      }
+    }
+
+    function handleEditPhotoSelect(e) {
+      const files = Array.from(e.target.files || []);
+      if (!files.length) return;
+      showToast('미디어(사진/동영상) 처리 중...');
+      let loaded = 0;
+      files.forEach(function(file) {
+        processMediaFile(file, function(res) {
+          if (res) editNewPhotos.push(res);
+          loaded++;
+          if (loaded === files.length) {
+            renderEditPhotosPreview();
+            showToast('사진/동영상 추가 완료!');
+          }
+        });
+      });
+      e.target.value = '';
+    }
+
+    function removeEditExistingPhoto(idx) {
+      editExistingPhotoIds.splice(idx, 1);
+      renderEditPhotosPreview();
+    }
+
+    function removeEditNewPhoto(idx) {
+      editNewPhotos.splice(idx, 1);
+      renderEditPhotosPreview();
+    }
+
+    function renderEditPhotosPreview() {
+      const grid = document.getElementById('editPhotosPreviewGrid');
+      if (editExistingPhotoIds.length === 0 && editNewPhotos.length === 0) {
+        grid.innerHTML = '<div style="font-size:12px; color:#94a3b8; grid-column:1/-1; text-align:center; padding:10px;">등록된 사진/동영상이 없습니다.</div>';
+        return;
+      }
+
+      let html = '';
+      editExistingPhotoIds.forEach(function(id, idx) {
+        const isVid = id.indexOf('vid:') === 0;
+        const realId = id.replace('vid:', '');
+        const thumbUrl = 'https://lh3.googleusercontent.com/d/' + realId;
+        const itemClass = 'photo-preview-item' + (isVid ? ' is-video' : '');
+        html += '<div class="' + itemClass + '">' +
+          '<img src="' + thumbUrl + '" alt="' + (isVid ? '동영상' : '기존 사진') + '" onerror="this.src=\'https://drive.google.com/thumbnail?id=' + realId + '&sz=w300\'">' +
+          '<button type="button" class="photo-delete-btn" onclick="removeEditExistingPhoto(' + idx + ')" title="삭제">✕</button>' +
+        '</div>';
+      });
+
+      editNewPhotos.forEach(function(item, idx) {
+        const isVid = typeof item === 'object' ? item.isVideo : (typeof item === 'string' && item.indexOf('data:video/') === 0);
+        const src = typeof item === 'object' ? (item.thumbUrl || item.dataUrl) : item;
+        const itemClass = 'photo-preview-item' + (isVid ? ' is-video' : '');
+        html += '<div class="' + itemClass + '">' +
+          '<img src="' + src + '" alt="' + (isVid ? '동영상' : '새 사진') + '">' +
+          '<button type="button" class="photo-delete-btn" onclick="removeEditNewPhoto(' + idx + ')" title="삭제">✕</button>' +
+        '</div>';
+      });
+
+      grid.innerHTML = html;
+    }
+
+    function handleEditTennisSubmit(e) {
+      e.preventDefault();
+      const btn = document.getElementById('btnEditSubmit');
+      btn.disabled = true;
+      btn.textContent = '수정 내용 저장 중...';
+
+      let locationVal = document.getElementById('editSelectLocation').value;
+      if (locationVal === 'custom') {
+        locationVal = document.getElementById('editLocationCustom').value.trim() || '기타';
+      }
+
+      const formattedNewPhotos = editNewPhotos.map(function(p) {
+        return typeof p === 'object' ? p.dataUrl : p;
+      });
+
+      const data = {
+        rowIndex: parseInt(document.getElementById('editRowIndex').value),
+        date: document.getElementById('editDate').value,
+        category: curEditCategory,
+        title: document.getElementById('editTitle').value.trim(),
+        duration_minutes: parseInt(document.getElementById('editDuration').value) || 60,
+        intensity: parseInt(document.getElementById('editIntensity').value) || 6,
+        result: curEditCategory === '클럽게임' ? curEditGameResult : '',
+        score: curEditCategory === '클럽게임' ? document.getElementById('editScore').value.trim() : '',
+        players: curEditCategory === '클럽게임' ? document.getElementById('editPlayers').value.trim() : '',
+        court_type: document.getElementById('editCourtType').value,
+        location: locationVal,
+        focus_skill: curEditCategory === '클럽게임' ? '' : document.getElementById('editFocusSkill').value.trim(),
+        notes: document.getElementById('editNotes').value.trim(),
+        ai_summary: document.getElementById('editAiSummary').value.trim(),
+        existingPhotoIds: editExistingPhotoIds,
+        photos: formattedNewPhotos
+      };
+
+      // ⚡ 0ms 즉각 UI 반영 (수정 모달 즉시 닫고 로컬 일지 실시간 갱신)
+      showToast('테니스 일지가 성공적으로 수정되었습니다! ✏️🎾');
+      btn.disabled = false;
+      btn.textContent = '수정 완료 저장';
+      closeEditTennisModal();
+
+      const editIdx = allLogs.findIndex(function(l) { return l.rowIndex === data.rowIndex; });
+      let prevLog = null;
+      if (editIdx !== -1) {
+        prevLog = Object.assign({}, allLogs[editIdx]);
+        Object.assign(allLogs[editIdx], data);
+        renderLogs();
+      }
+
+      // 🔄 백그라운드 무중단 서버 동기화
+      callGasApi('updateTennisLog', data, function() {
+        loadData(true);
+        loadStringData();
+      }, function(err) {
+        if (prevLog && editIdx !== -1) {
+          allLogs[editIdx] = prevLog;
+          renderLogs();
+        }
+        alert('수정 실패: ' + err.message);
+      });
+    }
+
+        function selectCategory(cat) {
+      curCategory = cat;
+      document.querySelectorAll('.cat-btn').forEach(function(b) {
+        b.classList.toggle('active', b.getAttribute('data-cat') === cat);
+      });
+      document.getElementById('box-game').classList.toggle('hidden', cat !== '클럽게임');
+      const skillBox = document.getElementById('box-skills');
+      if (skillBox) skillBox.classList.toggle('hidden', cat === '클럽게임');
+    }
+
+    function setGameResult(res) {
+      curGameResult = res;
+      document.getElementById('btnResWin').className = 'result-btn' + (res === '승' ? ' active-win' : '');
+      document.getElementById('btnResLoss').className = 'result-btn' + (res === '패' ? ' active-loss' : '');
+      document.getElementById('btnResDraw').className = 'result-btn' + (res === '무' ? ' active-draw' : '');
+    }
+
+    function toggleSkill(el, skillName) {
+      el.classList.toggle('active');
+      if (el.classList.contains('active')) {
+        if (!selectedSkills.includes(skillName)) selectedSkills.push(skillName);
+      } else {
+        selectedSkills = selectedSkills.filter(function(s) { return s !== skillName; });
+      }
+      document.getElementById('inputFocusSkill').value = selectedSkills.join(', ');
+    }
+
+    function switchTab(tab) {
+      try {
+        var views = ['new', 'list', 'charts', 'strings', 'video'];
+        views.forEach(function(v) {
+          var viewEl = document.getElementById('view-' + v);
+          if (viewEl) viewEl.classList.toggle('hidden', v !== tab);
+          var tabEl = document.getElementById('tab-' + v);
+          if (tabEl) tabEl.classList.toggle('active', v === tab);
+        });
+
+        if (tab === 'list') renderLogs();
+        if (tab === 'charts') renderAllCharts();
+        if (tab === 'strings') renderStringDashboard();
+      } catch (err) {
+        console.error('switchTab error:', err);
+      }
+    }
+
+    function loadData(silent) {
+      if (!silent) showToast('테니스 일지 동기화 중...');
+      callGasApi('getTennisData', undefined, function(res) {
+        if (!res || !Array.isArray(res.logs)) {
+          if (!silent) showToast('동기화 재시도 필요: 데이터를 온전히 받지 못했습니다.');
+          return;
+        }
+        allLogs = res.logs;
+        monthlyTrendsData = res.monthly_trends || [];
+        if (typeof updateStats === 'function') updateStats(res.overview);
+        renderLogs();
+        if (typeof renderAllCharts === 'function') renderAllCharts();
+        if (!silent) showToast('동기화 완료!');
+        try {
+          localStorage.setItem('tennis_diary_cached_data', JSON.stringify({
+            logs: allLogs,
+            overview: res.overview,
+            monthly_trends: monthlyTrendsData
+          }));
+        } catch(e) {}
+      }, function(err) {
+        if (!silent) showToast('동기화 오류: ' + (err.message || err));
+      });
+    }
+
+    function loadStringData() {
+      callGasApi('getTennisStringData', undefined, function(res) {
+        stringDataObj = res;
+        if (typeof renderStringDashboard === 'function') renderStringDashboard();
+        else if (typeof applyStringData === 'function') applyStringData(res);
+      }, function(err) {
+        console.error("String load error:", err);
+      });
+    }
+
+    function updateStats(overview) {
+      if (!overview) return;
+      document.getElementById('stat-total-workouts').textContent = (overview.total_activities || 0) + ' 회';
+      document.getElementById('stat-total-hours').textContent = (overview.total_hours || 0) + ' 시간';
+      document.getElementById('stat-game-record').textContent = (overview.wins || 0) + '승 ' + (overview.losses || 0) + '패';
+      document.getElementById('stat-win-rate').textContent = (overview.win_rate || 0) + '%';
+    }
+
+    // 🎾 STRING DASHBOARD RENDER
+    function renderStringDashboard() {
+      if (!stringDataObj) return;
+
+      const active = stringDataObj.activeString;
+      const stats = stringDataObj.statsSince || {};
+
+      if (!active) {
+        document.getElementById('strHeroRacket').textContent = '라켓 미등록';
+        document.getElementById('strHeroName').textContent = '스트링 미등록';
+        document.getElementById('strHeroType').textContent = '-';
+        document.getElementById('strHeroTension').textContent = '-';
+        document.getElementById('strHeroDate').textContent = '교체일: -';
+        document.getElementById('strHeroDays').textContent = '0 일차';
+        document.getElementById('strHeroHours').textContent = '0 시간';
+        document.getElementById('strHeroSessions').textContent = '0 회';
+        document.getElementById('strHeroPercent').textContent = '0%';
+        document.getElementById('strHeroBar').style.width = '0%';
+        return;
+      }
+
+      document.getElementById('strHeroRacket').textContent = active.racket || '라켓 모델';
+      document.getElementById('strHeroName').textContent = active.string_name || '스트링명';
+      document.getElementById('strHeroType').textContent = active.string_type || '폴리';
+      document.getElementById('strHeroTension').textContent = (active.tension || '50') + ' lbs';
+      document.getElementById('strHeroDate').textContent = '교체일: ' + (active.date || '-');
+
+      document.getElementById('strHeroDays').textContent = stats.daysElapsed + ' 일차';
+      document.getElementById('strHeroHours').textContent = stats.totalHours + ' 시간';
+      document.getElementById('strHeroSessions').textContent = stats.sessionCount + ' 회';
+
+      // 🎾 여성/일반 테니스 동호인 맞춤 수명 벤치마크 (2~3개월 / 40~50시간 기준)
+      // 인조쉽: 50시간 (약 3~4개월), 폴리: 40시간 (약 2~3개월), 천연쉽/하이브리드: 60시간
+      let benchmarkHours = 40;
+      if (active.string_type === '인조쉽') benchmarkHours = 50;
+      else if (active.string_type === '천연쉽') benchmarkHours = 60;
+      else if (active.string_type === '하이브리드') benchmarkHours = 50;
+      else benchmarkHours = 40; // 폴리/일반
+
+      const percent = Math.min(Math.round((stats.totalHours / benchmarkHours) * 100), 100);
+      document.getElementById('strHeroPercent').textContent = percent + '% (' + stats.totalHours + 'h / ' + benchmarkHours + 'h)';
+
+      const bar = document.getElementById('strHeroBar');
+      bar.style.width = percent + '%';
+      bar.className = 'string-progress-fill ' + (percent < 60 ? 'safe' : (percent < 90 ? 'warn' : 'danger'));
+
+      // Render History Cards
+      const container = document.getElementById('stringHistoryContainer');
+      const logs = stringDataObj.stringLogs || [];
+      if (logs.length === 0) {
+        container.innerHTML = '<div style="text-align:center; padding:20px; color:#94a3b8; font-size:12px;">등록된 스트링 교체 이력이 없습니다.</div>';
+        return;
+      }
+
+      container.innerHTML = logs.map(function(item) {
+        return '<div class="string-history-card">' +
+          '<div class="string-h-header">' +
+            '<div class="string-h-racket">🎾 ' + escapeHtml(item.racket) + '</div>' +
+            '<div style="display:flex; align-items:center; gap:6px;">' +
+              '<span class="string-h-date">' + escapeHtml(item.date) + '</span>' +
+              '<button type="button" class="btn-action del" onclick="deleteString(' + item.rowIndex + ')">🗑️</button>' +
+            '</div>' +
+          '</div>' +
+          '<div class="string-h-details">' +
+            '<span><b>스트링:</b> ' + escapeHtml(item.string_name) + ' (' + escapeHtml(item.string_type) + ')</span>' +
+            '<span><b>텐션:</b> ' + escapeHtml(item.tension) + ' lbs</span>' +
+            (item.cost ? '<span><b>비용:</b> ' + item.cost.toLocaleString() + '원</span>' : '') +
+            (item.shop_name ? '<span><b>매장:</b> ' + escapeHtml(item.shop_name) + '</span>' : '') +
+          '</div>' +
+          (item.notes ? '<div style="font-size:11px; color:#64748b; margin-top:4px;">💬 ' + escapeHtml(item.notes) + '</div>' : '') +
+        '</div>';
+      }).join('');
+    }
+
+    // 🤖 RUN AI STRING DIAGNOSIS
+    function runAiStringDiagnosis() {
+      const btn = document.getElementById('btnAiStringDiagnose');
+      const resultBox = document.getElementById('aiStringResultBox');
+      const resultContent = document.getElementById('aiStringResultContent');
+
+      if (!stringDataObj || !stringDataObj.activeString) {
+        alert("먼저 '➕ 새 스트링 교체 등록' 버튼을 눌러 현재 장착된 스트링 정보를 등록해주세요! 🎾");
+        return;
+      }
+
+      btn.disabled = true;
+      btn.innerHTML = '<span>⏳ Gemini 3.6 Flash가 2~3개월간의 타구 데이터를 정밀 분석 중...</span>';
+      showToast('Gemini AI가 스트링 피로도 & 텐션 로스를 진단 중입니다... 🤖✨');
+
+      callGasApi('analyzeTennisStringAI', {
+        activeString: stringDataObj.activeString,
+        statsSince: stringDataObj.statsSince,
+        geminiApiKey: localStorage.getItem('gemini_api_key') || ''
+      }, function(res) {
+        btn.disabled = false;
+        btn.innerHTML = '<span>✨ AI 스트링 교체 시점 & 텐션 로스 정밀 진단</span>';
+        if (res && res.analysis) {
+          resultContent.textContent = res.analysis;
+          resultBox.classList.remove('hidden');
+          showToast('AI 스트링 정밀 진단 완료! 🎾✨');
+        }
+      }, function(err) {
+        btn.disabled = false;
+        btn.innerHTML = '<span>✨ AI 스트링 교체 시점 & 텐션 로스 정밀 진단</span>';
+        alert('AI 분석 실패: ' + (err.message || err));
+      });
+    }
+
+    // 🏟️ 구장 선택 및 직접 입력 핸들러
+    function handleLocationSelectChange(val) {
+      const customInput = document.getElementById('inputLocationCustom');
+      if (val === 'custom') {
+        customInput.classList.remove('hidden');
+        customInput.focus();
+      } else {
+        customInput.classList.add('hidden');
+        customInput.value = '';
+      }
+    }
+
+    function getSelectedLocationValue() {
+      const sel = document.getElementById('selectLocation').value;
+      if (sel === 'custom') {
+        return document.getElementById('inputLocationCustom').value.trim() || '기타 구장';
+      }
+      return sel;
+    }
+
+    // 🤖 GENERATE DAILY TENNIS AI COACH SUMMARY
+    function generateTennisAiSummary() {
+      const btn = document.getElementById('btnAiCoach');
+      const aiNotesEl = document.getElementById('inputAiSummary');
+      const userNotes = document.getElementById('inputNotes').value.trim();
+      const cat = curCategory;
+      const dur = parseInt(document.getElementById('inputDuration').value) || 60;
+      const rpe = parseInt(document.getElementById('inputIntensity').value) || 6;
+      const score = document.getElementById('inputScore').value.trim();
+      const skill = cat === '클럽게임' ? '' : document.getElementById('inputFocusSkill').value.trim();
+      const loc = getSelectedLocationValue();
+      const court = document.getElementById('inputCourtType').value;
+
+      btn.disabled = true;
+      btn.innerHTML = '<span>⏳ AI 코칭 분석 중...</span>';
+      showToast('Gemini AI가 훈련 데이터와 수기 메모를 정밀 분석 중입니다... 🎾✨');
+
+      callGasApi('generateGeminiTennisSummary', {
+        category: cat,
+        duration_minutes: dur,
+        intensity: rpe,
+        score: score,
+        result: curGameResult,
+        focus_skill: skill,
+        location: loc,
+        court_type: court,
+        user_notes: userNotes,
+        geminiApiKey: localStorage.getItem('gemini_api_key') || ''
+      }, function(res) {
+        btn.disabled = false;
+        btn.innerHTML = '<span>✨ AI 훈련 분석 & 코칭 생성</span>';
+        if (res && res.summary) {
+          aiNotesEl.value = res.summary;
+          showToast('AI 테니스 코칭 작성 완료! ✨');
+        }
+      }, function(err) {
+        btn.disabled = false;
+        btn.innerHTML = '<span>✨ AI 훈련 분석 & 코칭 생성</span>';
+        alert('AI 분석 실패: ' + (err.message || err));
+      });
+    }
+
+    function openStringModal() {
+      document.getElementById('stringModal').classList.remove('hidden');
+    }
+
+    function closeStringModal() {
+      document.getElementById('stringModal').classList.add('hidden');
+    }
+
+    function handleStringSubmit(e) {
+      e.preventDefault();
+      const btn = document.getElementById('btnSaveString');
+      btn.disabled = true;
+      btn.textContent = '저장 중...';
+
+      const data = {
+        date: document.getElementById('strInputDate').value,
+        racket: document.getElementById('strInputRacket').value.trim(),
+        string_name: document.getElementById('strInputName').value.trim(),
+        string_type: document.getElementById('strInputType').value,
+        tension: document.getElementById('strInputTension').value.trim(),
+        cost: parseInt(document.getElementById('strInputCost').value) || 0,
+        shop_name: document.getElementById('strInputShop').value.trim(),
+        notes: document.getElementById('strInputNotes').value.trim()
+      };
+
+      callGasApi('saveStringRecord', data, function() {
+        showToast('새 스트링 정보가 등록되었습니다! 🎾');
+        btn.disabled = false;
+        btn.textContent = '저장하기';
+        closeStringModal();
+        document.getElementById('stringForm').reset();
+        loadStringData();
+      }, function(err) {
+        alert('스트링 저장 실패: ' + (err.message || err));
+        btn.disabled = false;
+        btn.textContent = '저장하기';
+      });
+    }
+
+    function deleteString(rowIndex) {
+      if (!confirm('이 스트링 교체 기록을 삭제하시겠습니까?')) return;
+      showToast('삭제 중...');
+      callGasApi('deleteStringRecord', rowIndex, function() {
+        showToast('삭제되었습니다.');
+        loadStringData();
+      }, function(err) {
+        alert('삭제 실패: ' + (err.message || err));
+      });
+    }
+
+    function openApiKeyModal() {
+      document.getElementById('inputGeminiApiKey').value = localStorage.getItem('gemini_api_key') || '';
+      document.getElementById('apiKeyModal').classList.remove('hidden');
+    }
+
+    function closeApiKeyModal() {
+      document.getElementById('apiKeyModal').classList.add('hidden');
+    }
+
+    function handleSaveApiKey(e) {
+      e.preventDefault();
+      const key = document.getElementById('inputGeminiApiKey').value.trim();
+      if (!key) return;
+      localStorage.setItem('gemini_api_key', key);
+      closeApiKeyModal();
+      showToast('Gemini API Key가 저장되었습니다! 🤖✨');
+    }
+
+    function processMediaFile(file, callback) {
+      if (file.type && file.type.startsWith('video/')) {
+        if (file.size > 35 * 1024 * 1024) {
+          alert('동영상 크기가 너무 큽니다 (최대 35MB). 압축 또는 짧은 클립을 권장합니다.');
+          callback(null);
+          return;
+        }
+        // Generate video thumbnail from 0.5s frame
+        var video = document.createElement('video');
+        video.preload = 'metadata';
+        video.muted = true;
+        video.playsInline = true;
+        var fileUrl = URL.createObjectURL(file);
+        video.src = fileUrl;
+        
+        var timeoutId = setTimeout(function() {
+          var reader = new FileReader();
+          reader.onload = function(evt) {
+            callback({
+              dataUrl: evt.target.result,
+              thumbUrl: '',
+              isVideo: true
+            });
+            URL.revokeObjectURL(fileUrl);
+          };
+          reader.readAsDataURL(file);
+        }, 3500);
+
+        video.onloadedmetadata = function() {
+          video.currentTime = Math.min(0.5, video.duration / 2 || 0.1);
+        };
+
+        video.onseeked = function() {
+          clearTimeout(timeoutId);
+          var canvas = document.createElement('canvas');
+          var maxDim = 400;
+          var w = video.videoWidth || 320;
+          var h = video.videoHeight || 240;
+          if (w > maxDim || h > maxDim) {
+            if (w > h) { h = Math.round((h * maxDim) / w); w = maxDim; }
+            else { w = Math.round((w * maxDim) / h); h = maxDim; }
+          }
+          canvas.width = w;
+          canvas.height = h;
+          var ctx = canvas.getContext('2d');
+          ctx.drawImage(video, 0, 0, w, h);
+          var thumbData = canvas.toDataURL('image/jpeg', 0.8);
+          
+          var reader = new FileReader();
+          reader.onload = function(evt) {
+            callback({
+              dataUrl: evt.target.result,
+              thumbUrl: thumbData,
+              isVideo: true
+            });
+            URL.revokeObjectURL(fileUrl);
+          };
+          reader.readAsDataURL(file);
+        };
+
+        video.onerror = function() {
+          clearTimeout(timeoutId);
+          var reader = new FileReader();
+          reader.onload = function(evt) {
+            callback({
+              dataUrl: evt.target.result,
+              thumbUrl: '',
+              isVideo: true
+            });
+            URL.revokeObjectURL(fileUrl);
+          };
+          reader.readAsDataURL(file);
+        };
+      } else {
+        // Image file compression
+        compressImage(file, function(compressedBase64) {
+          callback({
+            dataUrl: compressedBase64,
+            thumbUrl: compressedBase64,
+            isVideo: false
+          });
+        });
+      }
+    }
+
+    function handlePhotosSelect(e) {
+      const files = Array.from(e.target.files || []);
+      if (!files.length) return;
+      showToast('미디어(사진/동영상) 압축 최적화 중...');
+      let processed = 0;
+      const targetFiles = files.slice(0, 5 - selectedPhotos.length);
+      if (targetFiles.length === 0) {
+        alert('미디어는 최대 5장/편까지 첨부할 수 있습니다.');
+        return;
+      }
+      targetFiles.forEach(function(file) {
+        processMediaFile(file, function(res) {
+          if (res) selectedPhotos.push(res);
+          processed++;
+          if (processed === targetFiles.length) {
+            renderPhotosPreview();
+            showToast('미디어 ' + selectedPhotos.length + '개 추가 완료! 📸🎥');
+          }
+        });
+      });
+      e.target.value = '';
+    }
+
+    function compressImage(file, callback) {
+      const reader = new FileReader();
+      reader.onload = function(e) {
+        const img = new Image();
+        img.onload = function() {
+          const canvas = document.createElement('canvas');
+          let width = img.width;
+          let height = img.height;
+          const maxDim = 1200;
+          if (width > maxDim || height > maxDim) {
+            if (width > height) {
+              height = Math.round((height * maxDim) / width);
+              width = maxDim;
+            } else {
+              width = Math.round((width * maxDim) / height);
+              height = maxDim;
+            }
+          }
+          canvas.width = width;
+          canvas.height = height;
+          const ctx = canvas.getContext('2d');
+          ctx.drawImage(img, 0, 0, width, height);
+          const compressed = canvas.toDataURL('image/jpeg', 0.8);
+          callback(compressed);
+        };
+        img.src = e.target.result;
+      };
+      reader.readAsDataURL(file);
+    }
+
+    let curModalPhotos = [];
+    let curModalPhotoIdx = 0;
+
+    function openPhotoGallery(photos, idx) {
+      if (!photos || photos.length === 0) return;
+      curModalPhotos = Array.isArray(photos) ? photos : [photos];
+      curModalPhotoIdx = idx || 0;
+      updatePhotoModalView();
+      document.getElementById('photoModal').classList.remove('hidden');
+    }
+
+    function updatePhotoModalView() {
+      if (!curModalPhotos.length) return;
+      const photoId = curModalPhotos[curModalPhotoIdx];
+      if (!photoId) return;
+
+      const isVid = photoId.indexOf('vid:') === 0;
+      const realId = photoId.replace('vid:', '');
+
+      const imgEl = document.getElementById('photoModalImg');
+      const videoEl = document.getElementById('photoModalVideo');
+      const actionWrap = document.getElementById('photoModalActionWrap');
+      const extLink = document.getElementById('photoModalExternalLink');
+
+      if (isVid) {
+        if (imgEl) imgEl.classList.add('hidden');
+        if (videoEl) {
+          videoEl.classList.remove('hidden');
+          videoEl.pause();
+          videoEl.src = 'https://drive.google.com/uc?export=download&id=' + realId;
+          videoEl.load();
+        }
+        if (actionWrap && extLink) {
+          actionWrap.style.display = 'block';
+          extLink.href = 'https://drive.google.com/file/d/' + realId + '/view?usp=sharing';
+        }
+      } else {
+        if (videoEl) {
+          videoEl.pause();
+          videoEl.classList.add('hidden');
+          videoEl.src = '';
+        }
+        if (actionWrap) actionWrap.style.display = 'none';
+        if (imgEl) {
+          imgEl.classList.remove('hidden');
+          imgEl.setAttribute('referrerpolicy', 'no-referrer');
+          imgEl.src = 'https://lh3.googleusercontent.com/d/' + realId;
+          imgEl.onerror = function() {
+            if (!this.dataset.fb) {
+              this.dataset.fb = 1;
+              this.src = 'https://drive.google.com/thumbnail?id=' + realId + '&sz=w1200';
+            } else if (this.dataset.fb == 1) {
+              this.dataset.fb = 2;
+              this.src = 'https://drive.google.com/uc?export=view&id=' + realId;
+            }
+          };
+        }
+      }
+
+      const prevBtn = document.getElementById('btnPhotoPrev');
+      const nextBtn = document.getElementById('btnPhotoNext');
+      const counter = document.getElementById('photoModalCounter');
+
+      if (curModalPhotos.length > 1) {
+        if (prevBtn) prevBtn.style.display = 'flex';
+        if (nextBtn) nextBtn.style.display = 'flex';
+        if (counter) {
+          counter.style.display = 'block';
+          counter.textContent = (curModalPhotoIdx + 1) + ' / ' + curModalPhotos.length;
+        }
+      } else {
+        if (prevBtn) prevBtn.style.display = 'none';
+        if (nextBtn) nextBtn.style.display = 'none';
+        if (counter) counter.style.display = 'none';
+      }
+    }
+
+    function prevModalPhoto() {
+      if (!curModalPhotos.length) return;
+      curModalPhotoIdx = (curModalPhotoIdx - 1 + curModalPhotos.length) % curModalPhotos.length;
+      updatePhotoModalView();
+    }
+
+    function nextModalPhoto() {
+      if (!curModalPhotos.length) return;
+      curModalPhotoIdx = (curModalPhotoIdx + 1) % curModalPhotos.length;
+      updatePhotoModalView();
+    }
+
+    function closePhotoModal() {
+      document.getElementById('photoModal').classList.add('hidden');
+      const videoEl = document.getElementById('photoModalVideo');
+      if (videoEl) {
+        videoEl.pause();
+        videoEl.src = '';
+      }
+      curModalPhotos = [];
+      curModalPhotoIdx = 0;
+    }
+
+    let touchStartX = 0;
+    let touchEndX = 0;
+
+    function initPhotoSwipeListeners() {
+      const wrap = document.getElementById('photoModalWrap');
+      if (wrap) {
+        wrap.addEventListener('touchstart', function(e) {
+          if (e.touches && e.touches.length > 0) {
+            touchStartX = e.touches[0].clientX;
+          }
+        }, { passive: true });
+        wrap.addEventListener('touchend', function(e) {
+          if (e.changedTouches && e.changedTouches.length > 0) {
+            touchEndX = e.changedTouches[0].clientX;
+            const diff = touchEndX - touchStartX;
+            if (Math.abs(diff) > 40) {
+              if (diff > 0) prevModalPhoto();
+              else nextModalPhoto();
+            }
+          }
+        }, { passive: true });
+      }
+
+      document.addEventListener('keydown', function(e) {
+        const modal = document.getElementById('photoModal');
+        if (modal && !modal.classList.contains('hidden')) {
+          if (e.key === 'ArrowLeft') prevModalPhoto();
+          else if (e.key === 'ArrowRight') nextModalPhoto();
+          else if (e.key === 'Escape') closePhotoModal();
+        }
+      });
+    }
+
+    function renderPhotosPreview() {
+      const grid = document.getElementById('photosPreviewGrid');
+      if (selectedPhotos.length === 0) {
+        grid.innerHTML = '';
+        grid.classList.add('hidden');
+        return;
+      }
+      grid.classList.remove('hidden');
+      grid.innerHTML = selectedPhotos.map(function(item, idx) {
+        const isVid = typeof item === 'object' ? item.isVideo : (typeof item === 'string' && item.indexOf('data:video/') === 0);
+        const src = typeof item === 'object' ? (item.thumbUrl || item.dataUrl) : item;
+        const itemClass = 'photo-preview-item' + (isVid ? ' is-video' : '');
+        return '<div class="' + itemClass + '">' +
+          '<img src="' + src + '" alt="' + (isVid ? '동영상 썸네일' : '사진') + '">' +
+          '<button type="button" class="photo-delete-btn" onclick="removePhotoAt(' + idx + ')">✕</button>' +
+        '</div>';
+      }).join('');
+    }
+
+    function removePhotoAt(idx) {
+      selectedPhotos.splice(idx, 1);
+      renderPhotosPreview();
+    }
+
+    function handleSubmit(e) {
+      e.preventDefault();
+      const btn = document.getElementById('submitBtn');
+      btn.disabled = true;
+      btn.textContent = '일지 저장 중...';
+
+      const formattedPhotos = selectedPhotos.map(function(p) {
+        return typeof p === 'object' ? p.dataUrl : p;
+      });
+
+      const data = {
+        date: document.getElementById('inputDate').value,
+        category: curCategory,
+        title: document.getElementById('inputTitle').value.trim(),
+        duration_minutes: parseInt(document.getElementById('inputDuration').value) || 60,
+        intensity: parseInt(document.getElementById('inputIntensity').value) || 6,
+        result: curCategory === '클럽게임' ? curGameResult : '',
+        score: curCategory === '클럽게임' ? document.getElementById('inputScore').value.trim() : '',
+        players: document.getElementById('inputPlayers') ? document.getElementById('inputPlayers').value.trim() : '',
+        court_type: document.getElementById('inputCourtType').value,
+        location: getSelectedLocationValue(),
+        focus_skill: curCategory === '클럽게임' ? '' : document.getElementById('inputFocusSkill').value.trim(),
+        notes: document.getElementById('inputNotes').value.trim(),
+        ai_summary: document.getElementById('inputAiSummary').value.trim(),
+        photos: formattedPhotos
+      };
+
+      // ⚡ 0ms 즉각 UI 반영 (낙관적 갱신)
+      showToast('테니스 일지가 저장되었습니다! 🎾');
+      document.getElementById('tennisForm').reset();
+      document.getElementById('inputNotes').value = '';
+      document.getElementById('inputAiSummary').value = '';
+      if (document.getElementById('inputPlayers')) document.getElementById('inputPlayers').value = '';
+      if (document.getElementById('inputScore')) document.getElementById('inputScore').value = '';
+      document.getElementById('selectLocation').value = '중구';
+      document.getElementById('inputCourtType').value = '인조잔디';
+      document.getElementById('inputLocationCustom').classList.add('hidden');
+      document.getElementById('inputLocationCustom').value = '';
+      selectedPhotos = [];
+      selectedSkills = [];
+      document.querySelectorAll('.skill-chip').forEach(function(c) { c.classList.remove('active'); });
+      renderPhotosPreview();
+      selectCategory('레슨');
+      btn.disabled = false;
+      btn.textContent = '✨ 테니스 일지 저장하기';
+
+      // 로컬 메모리 즉시 추가 및 리스트 전환
+      const tempLog = Object.assign({ rowIndex: (allLogs.length ? allLogs[0].rowIndex + 1 : 2) }, data);
+      allLogs.unshift(tempLog);
+      renderLogs();
+      switchTab('list');
+
+      // 🔄 백그라운드 무중단 서버 동기화
+      callGasApi('saveTennisLog', data, function() {
+        loadData(true);
+        loadStringData();
+      }, function(err) {
+        allLogs = allLogs.filter(function(l) { return l !== tempLog; });
+        renderLogs();
+        alert('저장 실패: ' + err.message);
+      });
+    }
+
+    function filterLogs(cat) {
+      curFilter = cat;
+      curPage = 1;
+      document.querySelectorAll('.filter-pill').forEach(function(p) {
+        p.classList.toggle('active', p.textContent.includes(cat === 'all' ? '전체' : cat));
+      });
+      renderLogs();
+    }
+
+    function changePage(delta) {
+      curPage += delta;
+      renderLogs();
+      const tabEl = document.getElementById('tab-list');
+      if (tabEl) tabEl.scrollIntoView({ behavior: 'smooth' });
+    }
+
+    function renderLogs() {
+      const container = document.getElementById('logsContainer');
+      const filtered = allLogs.filter(function(l) { return curFilter === 'all' || l.category === curFilter; });
+      const totalItems = filtered.length;
+
+      if (totalItems === 0) {
+        container.innerHTML = '<div style="text-align:center; padding:48px 16px; color:#94a3b8; font-size:13.5px; font-weight:500;"><div style="font-size:36px; margin-bottom:8px;">🎾</div>아직 작성된 테니스 일지가 없습니다.<br><span style="font-size:12px; color:#64748b;">상단 폼에서 첫 운동 또는 경기 일지를 기록해보세요! ✨</span></div>';
+        return;
+      }
+
+      const totalPages = Math.ceil(totalItems / PAGE_SIZE) || 1;
+      if (curPage > totalPages) curPage = totalPages;
+      if (curPage < 1) curPage = 1;
+
+      const startIndex = (curPage - 1) * PAGE_SIZE;
+      const pageLogs = filtered.slice(startIndex, startIndex + PAGE_SIZE);
+
+      const logsHtml = pageLogs.map(function(log) {
+        let catClass = log.category === '클럽게임' ? 'game' : (log.category === '랠리/연습' ? 'practice' : '');
+        let resultBadge = '';
+        if (log.category === '클럽게임' && log.result) {
+          resultBadge = '<span class="' + (log.result === '승' || log.result === '승리' ? 'badge-win' : 'badge-loss') + '">' + escapeHtml(log.result) + '</span>';
+        }
+
+        let playersHtml = '';
+        if (log.players) {
+          playersHtml = '<div style="font-size:12px; color:#475569; margin-bottom:6px;">👥 <b>동반자/상대:</b> ' + escapeHtml(log.players) + '</div>';
+        }
+
+        let photosHtml = '';
+        if (log.photo_ids && log.photo_ids.length > 0) {
+          const photoIdsJson = JSON.stringify(log.photo_ids).replace(/"/g, '&quot;');
+          photosHtml = '<div class="log-photos-gallery">' +
+            log.photo_ids.map(function(id, pIdx) {
+              const isVid = id.indexOf('vid:') === 0;
+              const realId = id.replace('vid:', '');
+              const itemClass = 'log-photo-item' + (isVid ? ' is-video' : '');
+              return '<div class="' + itemClass + '" onclick="openPhotoGallery(' + photoIdsJson + ', ' + pIdx + ')">' +
+                '<img src="https://lh3.googleusercontent.com/d/' + realId + '" referrerpolicy="no-referrer" alt="' + (isVid ? '동영상' : '사진') + '" loading="lazy" onerror="if(!this.dataset.fb){this.dataset.fb=1;this.src=\'https://drive.google.com/thumbnail?id=' + realId + '&sz=w800\';}else if(this.dataset.fb==1){this.dataset.fb=2;this.src=\'https://drive.google.com/uc?export=view&id=' + realId + '\';}">' +
+                (isVid ? '<span class="video-tag-pill">동영상</span>' : '') +
+              '</div>';
+            }).join('') +
+          '</div>';
+        }
+
+        const comments = log.comments || [];
+        const savedAuthor = localStorage.getItem('tennis_diary_author_name') || '';
+
+        const commentItemsHtml = comments.length > 0
+          ? comments.map(function(c) {
+              const safeText = encodeURIComponent(c.text || '');
+              return '<div class="comment-item">' +
+                '<div class="comment-header">' +
+                  '<span class="comment-author">💬 ' + escapeHtml(c.author || '작성자') + '</span>' +
+                  '<div class="comment-meta-right">' +
+                    '<span class="comment-time">' + escapeHtml(c.createdAt || '') + '</span>' +
+                    '<button type="button" class="comment-action-btn" onclick="editComment(' + log.rowIndex + ', \'' + c.id + '\', \'' + safeText + '\')">✏️</button>' +
+                    '<button type="button" class="comment-action-btn delete" onclick="deleteComment(' + log.rowIndex + ', \'' + c.id + '\')">🗑️</button>' +
+                  '</div>' +
+                '</div>' +
+                '<div class="comment-text">' + escapeHtml(c.text || '') + '</div>' +
+              '</div>';
+            }).join('')
+          : '<div style="text-align:center; color:#94a3b8; font-size:11px; padding:4px;">아직 댓글이 없습니다. 첫 댓글을 남겨보세요! ✨</div>';
+
+                const authorInputHtml = '<input type="text" id="comment-author-' + log.rowIndex + '" class="comment-input-author" placeholder="작성자" value="' + escapeHtml(savedAuthor) + '" onchange="if(this.value.trim()){localStorage.setItem(\'tennis_diary_author_name\', this.value.trim());}">';
+
+        const commentsSectionHtml = '<div class="comments-wrapper">' +
+          '<div class="comments-header"><span>💬 댓글 (' + comments.length + ')</span></div>' +
+          '<div class="comment-list">' + commentItemsHtml + '</div>' +
+          '<form class="comment-form" onsubmit="submitComment(event, ' + log.rowIndex + ')">' +
+            authorInputHtml +
+            '<input type="text" id="comment-text-' + log.rowIndex + '" class="comment-input-text" placeholder="댓글 작성..." required>' +
+            '<button type="submit" class="comment-submit-btn">등록</button>' +
+          '</form>' +
+        '</div>';
+
+        return '<div class="log-item">' +
+          '<div class="log-item-header">' +
+            '<div style="display:flex; align-items:center; gap:6px;">' +
+              '<span class="cat-tag ' + catClass + '">' + escapeHtml(log.category) + '</span>' +
+              resultBadge +
+              '<span class="log-date">' + escapeHtml(log.date) + '</span>' +
+            '</div>' +
+            '<div class="log-actions">' +
+              '<button type="button" class="btn-action edit" onclick="openEditTennisModal(' + log.rowIndex + ')">✏️ 수정</button>' +
+              '<button type="button" class="btn-action del" onclick="deleteTennisLog(' + log.rowIndex + ')">🗑️ 삭제</button>' +
+            '</div>' +
+          '</div>' +
+
+          '<div class="log-title">' + escapeHtml(log.title || (log.category + ' 일지')) + '</div>' +
+          '<div class="log-info-row">' +
+            '<span>⏱️ ' + log.duration_minutes + '분</span>' +
+            (log.score ? '<span class="info-score">🎾 ' + escapeHtml(log.score) + '</span>' : '') +
+            (log.focus_skill ? '<span class="info-skill">🎯 ' + escapeHtml(log.focus_skill) + '</span>' : '') +
+            (log.location || log.court_type ? '<span style="color:#64748b; font-size:12px;">🏟️ ' + escapeHtml(log.location || '') + ' (' + escapeHtml(log.court_type || '') + ')</span>' : '') +
+            '<span style="background:#eef2ff; color:#4338ca; font-size:11px; padding:1px 6px; border-radius:4px;">RPE ' + log.intensity + '</span>' +
+          '</div>' +
+
+          playersHtml +
+          photosHtml +
+
+          (log.notes ? '<div class="log-notes"><div style="font-weight:700; color:#2563eb; margin-bottom:2px; font-size:11px;">📝 나의 수기 메모</div>' + escapeHtml(log.notes) + '</div>' : '') +
+          (log.ai_summary ? '<div class="log-ai-summary"><div style="font-weight:700; color:#065f46; margin-bottom:2px; font-size:11px;">🤖 Gemini AI 코칭 피드백</div>' + escapeHtml(log.ai_summary) + '</div>' : '') +
+          commentsSectionHtml +
+        '</div>';
+      }).join('');
+
+      let paginationHtml = '';
+      if (totalPages > 1) {
+        paginationHtml = '<div class="pagination-bar">' +
+          '<button type="button" class="page-nav-btn" onclick="changePage(-1)" ' + (curPage <= 1 ? 'disabled' : '') + '>‹ 이전</button>' +
+          '<span class="page-indicator"><b>' + curPage + '</b> / ' + totalPages + ' 페이지 (총 ' + totalItems + '개)</span>' +
+          '<button type="button" class="page-nav-btn" onclick="changePage(1)" ' + (curPage >= totalPages ? 'disabled' : '') + '>다음 ›</button>' +
+        '</div>';
+      }
+
+      container.innerHTML = logsHtml + paginationHtml;
+    }
+
+    function submitComment(e, rowIndex) {
+      e.preventDefault();
+      const aEl = document.getElementById('comment-author-' + rowIndex);
+      const tEl = document.getElementById('comment-text-' + rowIndex);
+      const submitBtn = e.target ? e.target.querySelector('button[type="submit"]') : null;
+      const author = aEl ? aEl.value.trim() || '작성자' : '작성자';
+      const text = tEl ? tEl.value.trim() : '';
+      if (!text) return;
+
+      if (author && author !== '작성자') { localStorage.setItem('tennis_diary_author_name', author); }
+
+      // ⚡ 0ms 즉각 UI 반영 (낙관적 업데이트)
+      if (tEl) {
+        tEl.value = '';
+        tEl.blur(); // 모바일 가상 키보드 즉시 내려서 화면 확보
+      }
+
+      const tempId = 'temp-' + Date.now();
+      const now = new Date();
+      const nowStr = now.getFullYear() + '-' + String(now.getMonth() + 1).padStart(2, '0') + '-' + String(now.getDate()).padStart(2, '0') + ' ' + String(now.getHours()).padStart(2, '0') + ':' + String(now.getMinutes()).padStart(2, '0');
+
+      const tempComment = {
+        id: tempId,
+        author: author,
+        text: text,
+        createdAt: nowStr
+      };
+
+      const log = allLogs.find(function(l) { return l.rowIndex === rowIndex; });
+      if (log) {
+        log.comments = log.comments || [];
+        log.comments.push(tempComment);
+        renderLogs();
+      }
+
+      showToast('댓글이 등록되었습니다! 💬');
+
+      if (submitBtn) {
+        submitBtn.disabled = true;
+        submitBtn.textContent = '...';
+      }
+
+      callGasApi('addTennisComment', { rowIndex: rowIndex, commentData: { author: author, text: text } }, function(res) {
+        if (submitBtn) {
+          submitBtn.disabled = false;
+          submitBtn.textContent = '등록';
+        }
+        if (log && res && res.comments) {
+          log.comments = res.comments;
+          renderLogs();
+        }
+      }, function(err) {
+        if (submitBtn) {
+          submitBtn.disabled = false;
+          submitBtn.textContent = '등록';
+        }
+        if (log && log.comments) {
+          log.comments = log.comments.filter(function(c) { return c.id !== tempId; });
+          renderLogs();
+        }
+        if (tEl) tEl.value = text;
+        alert('등록 실패: ' + (err.message || err));
+      });
+    }
+
+    function editComment(rowIndex, commentId, safeText) {
+      const cur = decodeURIComponent(safeText || '');
+      const newT = prompt('댓글을 수정하세요:', cur);
+      if (!newT || newT.trim() === cur) return;
+
+      const log = allLogs.find(function(l) { return l.rowIndex === rowIndex; });
+      let oldText = '';
+      if (log && log.comments) {
+        const c = log.comments.find(function(item) { return item.id === commentId; });
+        if (c) {
+          oldText = c.text;
+          c.text = newT.trim();
+          c.updatedAt = new Date().toISOString();
+          renderLogs();
+        }
+      }
+
+      showToast('수정되었습니다. ✏️');
+      callGasApi('updateTennisComment', { rowIndex: rowIndex, commentId: commentId, newText: newT.trim() }, function(res) {
+        if (log && res && res.comments) {
+          log.comments = res.comments;
+          renderLogs();
+        }
+      }, function(err) {
+        if (log && log.comments) {
+          const c = log.comments.find(function(item) { return item.id === commentId; });
+          if (c) {
+            c.text = oldText;
+            renderLogs();
+          }
+        }
+        alert('수정 실패: ' + (err.message || err));
+      });
+    }
+
+    function deleteComment(rowIndex, commentId) {
+      if (!confirm('댓글을 삭제하시겠습니까?')) return;
+
+      const log = allLogs.find(function(l) { return l.rowIndex === rowIndex; });
+      let removedComment = null;
+      let removedIdx = -1;
+      if (log && log.comments) {
+        removedIdx = log.comments.findIndex(function(c) { return c.id === commentId; });
+        if (removedIdx !== -1) {
+          removedComment = log.comments[removedIdx];
+          log.comments.splice(removedIdx, 1);
+          renderLogs();
+        }
+      }
+
+      showToast('삭제되었습니다. 🗑️');
+      callGasApi('deleteTennisComment', { rowIndex: rowIndex, commentId: commentId }, function(res) {
+        if (log && res && res.comments) {
+          log.comments = res.comments;
+          renderLogs();
+        }
+      }, function(err) {
+        if (log && removedComment) {
+          log.comments.splice(removedIdx, 0, removedComment);
+          renderLogs();
+        }
+        alert('삭제 실패: ' + (err.message || err));
+      });
+    }
+
+    function deleteTennisLog(rowIndex) {
+      if (!confirm('이 테니스 일지를 삭제하시겠습니까?')) return;
+
+      // ⚡ 0ms 즉각 UI 반영 (화면에서 해당 일지 즉시 삭제 제거)
+      const targetIdx = allLogs.findIndex(function(l) { return l.rowIndex === rowIndex; });
+      let removedLog = null;
+      if (targetIdx !== -1) {
+        removedLog = allLogs[targetIdx];
+        allLogs.splice(targetIdx, 1);
+        renderLogs();
+        showToast('테니스 일지가 삭제되었습니다. 🗑️');
+      }
+
+      // 🔄 백그라운드 무중단 서버 동기화
+      callGasApi('deleteTennisLog', rowIndex, function() {
+        loadData(true);
+        loadStringData();
+      }, function(err) {
+        if (removedLog && targetIdx !== -1) {
+          allLogs.splice(targetIdx, 0, removedLog);
+          renderLogs();
+        }
+        alert('삭제 실패: ' + (err.message || err));
+      });
+    }
+
+    function testTelegram() {
+      showToast('텔레그램 알림 발송 중...');
+      callGasApi('testTennisTelegramAlert', undefined, function() {
+        showToast('텔레그램 알림 발송 완료! 스마트폰을 확인하세요 🔔');
+      }, function(err) {
+        alert('텔레그램 알림 발송 실패: ' + (err.message || err));
+      });
+    }
+
+    function renderAllCharts() {
+      if (typeof Chart === 'undefined') return;
+
+      const ctx1 = document.getElementById('chartActivity');
+      if (ctx1 && monthlyTrendsData.length > 0) {
+        if (chart1) chart1.destroy();
+        const months = monthlyTrendsData.map(function(m) { return m.month; });
+
+        chart1 = new Chart(ctx1, {
+          type: 'bar',
+          data: {
+            labels: months,
+            datasets: [
+              {
+                label: '🎾 레슨',
+                data: monthlyTrendsData.map(function(m) { return (m.data && m.data['레슨']) || 0; }),
+                backgroundColor: '#16a34a',
+                borderRadius: 4
+              },
+              {
+                label: '🏆 클럽게임',
+                data: monthlyTrendsData.map(function(m) { return (m.data && m.data['클럽게임']) || 0; }),
+                backgroundColor: '#2563eb',
+                borderRadius: 4
+              }
+            ]
+          },
+          options: {
+            responsive: true,
+            maintainAspectRatio: false,
+            scales: { y: { beginAtZero: true, ticks: { stepSize: 1 } } }
+          }
+        });
+      }
+
+      const ctx2 = document.getElementById('chartWinLoss');
+      if (ctx2 && allLogs.length > 0) {
+        if (chart2) chart2.destroy();
+        const wins = allLogs.filter(function(l) { return l.result === '승' || l.result === '승리'; }).length;
+        const losses = allLogs.filter(function(l) { return l.result === '패' || l.result === '패배'; }).length;
+
+        chart2 = new Chart(ctx2, {
+          type: 'doughnut',
+          data: {
+            labels: ['승리 🥇', '패배 🥈'],
+            datasets: [{
+              data: [wins, losses],
+              backgroundColor: ['#16a34a', '#ef4444'],
+              borderWidth: 2
+            }]
+          },
+          options: {
+            responsive: true,
+            maintainAspectRatio: false,
+            plugins: { legend: { position: 'bottom' } }
+          }
+        });
+      }
+    }
+
+    // -------------------------------------------------------------
+    // 🎥 5. VIDEO FORM ANALYSIS JAVASCRIPT
+    // -------------------------------------------------------------
+    let selectedVideoFile = null;
+    let selectedVideoBase64 = null;
+    let selectedVideoMime = 'video/mp4';
+    let lastVideoAnalysisReport = '';
+
+    function selectMotionType(btn) {
+      document.querySelectorAll('.motion-btn').forEach(function(b) { b.classList.remove('active'); });
+      btn.classList.add('active');
+      const val = btn.getAttribute('data-motion');
+      document.getElementById('selectedMotionType').value = val;
+    }
+
+    function toggleFocusChip(chip, text) {
+      chip.classList.toggle('active');
+      const input = document.getElementById('inputVideoFocusNotes');
+      let cur = input.value.trim();
+      if (chip.classList.contains('active')) {
+        input.value = cur ? (cur + ', ' + text) : text;
+      } else {
+        let parts = cur.split(',').map(function(s) { return s.trim(); }).filter(function(s) { return s && s !== text; });
+        input.value = parts.join(', ');
+      }
+    }
+
+    function handleVideoSelect(e) {
+      const files = e.target.files;
+      if (!files || !files.length) return;
+      processVideoFile(files[0]);
+    }
+
+    function processVideoFile(file) {
+      if (!file) return;
+      const sizeMB = file.size / (1024 * 1024);
+      if (sizeMB > 45) {
+        alert("동영상 파일 용량이 너무 큽니다 (" + sizeMB.toFixed(1) + "MB).\n원활한 분석을 위해 30MB 이하 (10~30초) 동영상을 선택해주세요.");
+        return;
+      }
+
+      selectedVideoFile = file;
+      selectedVideoMime = file.type || 'video/mp4';
+
+      document.getElementById('videoFileName').textContent = file.name;
+      document.getElementById('videoFileSize').textContent = sizeMB.toFixed(1) + ' MB';
+
+      const player = document.getElementById('formVideoPlayer');
+      const blobUrl = URL.createObjectURL(file);
+      player.src = blobUrl;
+      document.getElementById('videoPreviewContainer').classList.remove('hidden');
+
+      showToast('동영상이 로드되었습니다! 📹 (' + sizeMB.toFixed(1) + 'MB)');
+
+      const reader = new FileReader();
+      reader.onload = function(evt) {
+        const fullDataUrl = evt.target.result;
+        const base64Index = fullDataUrl.indexOf(';base64,');
+        if (base64Index !== -1) {
+          selectedVideoBase64 = fullDataUrl.substring(base64Index + 8);
+        } else {
+          selectedVideoBase64 = fullDataUrl;
+        }
+      };
+      reader.readAsDataURL(file);
+    }
+
+    function initVideoDropzone() {
+      const dropzone = document.getElementById('videoDropzone');
+      if (!dropzone) return;
+
+      ['dragenter', 'dragover'].forEach(function(eventName) {
+        dropzone.addEventListener(eventName, function(e) {
+          e.preventDefault();
+          e.stopPropagation();
+          dropzone.classList.add('dragover');
+        }, false);
+      });
+
+      ['dragleave', 'drop'].forEach(function(eventName) {
+        dropzone.addEventListener(eventName, function(e) {
+          e.preventDefault();
+          e.stopPropagation();
+          dropzone.classList.remove('dragover');
+        }, false);
+      });
+
+      dropzone.addEventListener('drop', function(e) {
+        const dt = e.dataTransfer;
+        const files = dt.files;
+        if (files && files.length > 0) {
+          processVideoFile(files[0]);
+        }
+      }, false);
+    }
+
+    function runVideoFormAnalysis() {
+      if (!selectedVideoBase64 && !selectedVideoFile) {
+        alert("먼저 분석할 10~30초 동영상을 업로드해주세요! 📹");
+        return;
+      }
+
+      const apiKey = localStorage.getItem('gemini_api_key') || '';
+      const motionType = document.getElementById('selectedMotionType').value;
+      const focusNotes = document.getElementById('inputVideoFocusNotes').value.trim();
+      const modelPref = document.getElementById('selectVideoAiModel').value;
+
+      const btn = document.getElementById('btnRunVideoAnalysis');
+      const progressBox = document.getElementById('videoProgressBox');
+      const progressText = document.getElementById('videoProgressText');
+      const resultCard = document.getElementById('videoAnalysisResultCard');
+      const resultContent = document.getElementById('videoAnalysisResultContent');
+      const resultSub = document.getElementById('videoResultMotionSub');
+
+      btn.disabled = true;
+      btn.innerHTML = '<span>⏳ Gemini AI Vision 정밀 분석 중...</span>';
+      progressBox.classList.remove('hidden');
+      resultCard.classList.add('hidden');
+      progressText.textContent = '⏳ 비디오 프레임 추출 및 Gemini AI Vision 모델 호출 중...';
+
+      if (apiKey && selectedVideoBase64) {
+        executeDirectGeminiVideoAnalysis(apiKey, selectedVideoBase64, selectedVideoMime, motionType, focusNotes, modelPref)
+          .then(function(report) {
+            handleVideoAnalysisSuccess(report, motionType);
+          })
+          .catch(function(err) {
+            console.warn("Direct API fail, falling back to GAS backend:", err);
+            progressText.textContent = '⏳ 구글 서버 백엔드를 통해 AI 비디오 분석 재시도 중...';
+            executeGasBackendVideoAnalysis(apiKey, selectedVideoBase64, selectedVideoMime, motionType, focusNotes, modelPref);
+          });
+      } else {
+        executeGasBackendVideoAnalysis(apiKey, selectedVideoBase64, selectedVideoMime, motionType, focusNotes, modelPref);
+      }
+    }
+
+    function executeDirectGeminiVideoAnalysis(apiKey, videoBase64, mimeType, motionType, focusNotes, modelPref) {
+      return new Promise(function(resolve, reject) {
+        const models = modelPref === 'pro'
+          ? ['gemini-2.5-pro', 'gemini-1.5-pro', 'gemini-2.5-flash', 'gemini-2.0-flash']
+          : ['gemini-2.5-flash', 'gemini-2.0-flash', 'gemini-2.5-pro', 'gemini-1.5-pro'];
+
+        const prompt = "당신은 세계적인 프로 테니스 수석 코치이자 스포츠 바이오메카닉스(동작 생체역학) 및 러닝 폼 전문 분석가입니다.\n\n" +
+          "사용자가 업로드한 10~30초 동영상(촬영된 " + motionType + " 동작)을 프레임 단위로 정밀 분석하여, 아래 [필수 구성 양식]에 맞춰 최고의 전문 코칭 리포트를 작성해주세요.\n\n" +
+          (focusNotes ? "【사용자의 중점 질문 및 점검 요청】: \"" + focusNotes + "\"\n\n" : "") +
+          "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━\n" +
+          "【필수 분석 가이드 및 출력 포맷】\n" +
+          "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━\n\n" +
+          "🎯 [1. 폼 종합 평가 & 완성도 점수]\n" +
+          "• 폼 완성도: [XX점 / 100점] (등급: S / A / B / C 중 택1)\n" +
+          "• 핵심 진단 한줄평: (해당 동작의 가장 큰 강점과 즉각 개선이 필요한 핵심 1줄 요약)\n\n" +
+          "⏱️ [2. 프레임별 타임스탬프 동작 분해 분석]\n" +
+          "(영상에 나타난 실제 시간 [MM:SS] 또는 [00:0X] 타임스탬프를 명시하여 단계별로 상세히 분석할 것)\n" +
+          "• [00:00 ~ 00:0X] 준비 자세 & 유닛 턴 (Ready Position & Unit Turn / Stance)\n" +
+          "  - 시선, 스탠스 넓이, 상체 회전 각도 및 밸런스 점검\n" +
+          "• [00:0X ~ 00:0X] 테이크백 & 라켓 드롭 (Backswing / Racket Drop / Knee Bend)\n" +
+          "  - 라켓 헤드 높이, 팔꿈치 여유 공간, 무릎 굽힘 및 하체 코일링(에너지 축적)\n" +
+          "• [00:0X ~ 00:0X] 포워드 스윙 & 임팩트 타점 (Forward Swing & Contact Point / Foot Strike)\n" +
+          "  - 임팩트 시 몸 앞 타점 위치, 라켓면 각도, 체중 이동, 러닝 시 착지 패턴(미드풋/힐) 및 무릎 각도\n" +
+          "• [00:0X ~ 00:0X] 팔로우스루 & 리커버리 (Follow-Through & Kinetic Chain Finish)\n" +
+          "  - 릴리즈 궤적, 숄더 오버 숄더 회전, 착지 후 다음 동작 복귀 안정성\n\n" +
+          "💡 [3. 핵심 교정 처방 3가지 (Action Items)]\n" +
+          "1) [가장 시급한 폼 교정]: (원인 분석 + 구체적인 몸 동작 수정 가이드)\n" +
+          "2) [파워 & 정확도 향상 포인트]: (하체 체중 이동, 라켓 가속 타이밍 등)\n" +
+          "3) [추천 실전 연습 드릴]: (코트 또는 집에서 혼자 할 수 있는 1가지 맞춤형 연습법)\n\n" +
+          "⚠️ [4. 생체역학 & 관절 부상 위험도 점검]\n" +
+          "• 엘보(팔꿈치) / 손목 부하: (손목 꺾임, 충격 흡수 상태 진단)\n" +
+          "• 어깨 회전근개 / 허리 부하: (과도한 젖힘이나 무리한 스윙 여부)\n" +
+          "• 무릎 / 발목 관절 부하: (착지 충격 및 무릎 안쪽 쏠림 여부)\n\n" +
+          "친절하면서도 권위 있는 프로 코치의 어조로 읽기 쉽게 작성해주세요.";
+
+        function tryModel(idx) {
+          if (idx >= models.length) {
+            reject(new Error("모든 Gemini 모델 호출에 실패했습니다."));
+            return;
+          }
+          const model = models[idx];
+          const url = 'https://generativelanguage.googleapis.com/v1beta/models/' + model + ':generateContent?key=' + apiKey;
+
+          const payload = {
+            contents: [{
+              parts: [
+                {
+                  inline_data: {
+                    mime_type: mimeType,
+                    data: videoBase64
+                  }
+                },
+                {
+                  text: prompt
+                }
+              ]
+            }],
+            generationConfig: {
+              temperature: 0.4,
+              maxOutputTokens: 8192
+            }
+          };
+
+          fetch(url, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(payload)
+          })
+          .then(function(res) { return res.json(); })
+          .then(function(data) {
+            if (data.candidates && data.candidates.length > 0 && data.candidates[0].content && data.candidates[0].content.parts.length > 0) {
+              const parts = data.candidates[0].content.parts;
+              let fullText = '';
+              for (let p = 0; p < parts.length; p++) {
+                if (!parts[p].thought && parts[p].text) fullText += parts[p].text;
+              }
+              if (!fullText.trim()) fullText = parts[parts.length - 1].text || '';
+              if (fullText.trim()) {
+                resolve(fullText.trim());
+                return;
+              }
+            }
+            tryModel(idx + 1);
+          })
+          .catch(function(e) {
+            console.warn("Model " + model + " error:", e);
+            tryModel(idx + 1);
+          });
+        }
+
+        tryModel(0);
+      });
+    }
+
+    function executeGasBackendVideoAnalysis(apiKey, videoBase64, mimeType, motionType, focusNotes, modelPref) {
+      callGasApi('analyzeTennisVideoFormAI', {
+        geminiApiKey: apiKey,
+        videoBase64: videoBase64,
+        mimeType: mimeType,
+        motionType: motionType,
+        focusNotes: focusNotes,
+        modelPreference: modelPref
+      }, function(res) {
+        if (res && res.success) {
+          handleVideoAnalysisSuccess(res.analysis, motionType);
+        } else {
+          handleVideoAnalysisFailure(res ? res.error : "알 수 없는 오류");
+        }
+      }, function(err) {
+        handleVideoAnalysisFailure(err.message || err);
+      });
+    }
+
+    function handleVideoAnalysisSuccess(reportText, motionType) {
+      const btn = document.getElementById('btnRunVideoAnalysis');
+      const progressBox = document.getElementById('videoProgressBox');
+      const resultCard = document.getElementById('videoAnalysisResultCard');
+      const resultContent = document.getElementById('videoAnalysisResultContent');
+      const resultSub = document.getElementById('videoResultMotionSub');
+
+      btn.disabled = false;
+      btn.innerHTML = '<span>✨ Gemini AI 비디오 폼 정밀 분석 시작</span>';
+      progressBox.classList.add('hidden');
+
+      lastVideoAnalysisReport = reportText;
+      resultContent.textContent = reportText;
+      resultSub.textContent = motionType + ' 정밀 코칭 리포트';
+      resultCard.classList.remove('hidden');
+
+      showToast('AI 비디오 폼 분석 리포트 완성! 🎾✨');
+      resultCard.scrollIntoView({ behavior: 'smooth' });
+    }
+
+    function handleVideoAnalysisFailure(errMsg) {
+      const btn = document.getElementById('btnRunVideoAnalysis');
+      const progressBox = document.getElementById('videoProgressBox');
+
+      btn.disabled = false;
+      btn.innerHTML = '<span>✨ Gemini AI 비디오 폼 정밀 분석 시작</span>';
+      progressBox.classList.add('hidden');
+
+      alert("AI 비디오 분석 실패: " + errMsg + "\n\n상단 '⚙️ AI설정'에서 유효한 Gemini API Key가 입력되었는지 확인해주세요.");
+    }
+
+    function copyVideoReport() {
+      if (!lastVideoAnalysisReport) return;
+      if (navigator.clipboard && navigator.clipboard.writeText) {
+        navigator.clipboard.writeText(lastVideoAnalysisReport).then(function() {
+          showToast('코칭 리포트가 클립보드에 복사되었습니다! 📋');
+        });
+      } else {
+        alert("리포트를 복사했습니다:\n\n" + lastVideoAnalysisReport.substring(0, 100) + "...");
+      }
+    }
+
+    function applyVideoReportToDailyLog() {
+      if (!lastVideoAnalysisReport) return;
+      const notesEl = document.getElementById('inputNotes');
+      const curNotes = notesEl.value.trim();
+      const motion = document.getElementById('selectedMotionType').value;
+      const snippet = '🎥 [AI 비디오 폼 분석 피드백 - ' + motion + ']\n' + lastVideoAnalysisReport;
+
+      notesEl.value = curNotes ? (curNotes + '\n\n' + snippet) : snippet;
+      switchTab('new');
+      showToast('오늘 테니스 일지 수기 메모에 비디오 분석 피드백이 적용되었습니다! ✍️');
+    }
+
+    function escapeHtml(str) {
+      return String(str || '')
+        .replace(/&/g, '&amp;')
+        .replace(/</g, '&lt;')
+        .replace(/>/g, '&gt;')
+        .replace(/"/g, '&quot;')
+        .replace(/'/g, '&#039;');
+    }
+
+    let toastTimeout = null;
+    function showToast(msg) {
+      const t = document.getElementById('toast');
+      if (!t) return;
+      t.textContent = msg;
+      t.classList.add('show');
+      if (toastTimeout) clearTimeout(toastTimeout);
+      toastTimeout = setTimeout(function() { t.classList.remove('show'); }, 2800);
+    }
+  </script>
+</body>
+</html>
