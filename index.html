@@ -1947,7 +1947,7 @@
         <!-- 🤖 2. GEMINI AI 코칭 분석 전용 창 -->
         <div class="form-group">
           <div class="ai-coach-bar">
-            <span style="font-size:12px; font-weight:700; color:#065f46;">🤖 Gemini AI 코칭 분석 (별도 생성)</span>
+            <span style="font-size:12px; font-weight:700; color:#065f46;">🤖 Claude AI 코칭 분석 (별도 생성)</span>
             <button type="button" id="btnAiCoach" class="ai-coach-btn" onclick="generateTennisAiSummary()">
               <span>✨ AI 훈련 분석 & 코칭 생성</span>
             </button>
@@ -2056,7 +2056,7 @@
       <div id="aiStringResultBox" class="ai-analysis-result-box hidden">
         <div class="ai-result-header">
           <div class="ai-result-title">
-            <span>🤖 Gemini 3.6 Flash 스트링 수명 진단 리포트</span>
+            <span>🤖 Claude AI 스트링 수명 진단 리포트</span>
           </div>
           <button type="button" class="modal-close-btn" onclick="document.getElementById('aiStringResultBox').classList.add('hidden')">✕</button>
         </div>
@@ -2379,7 +2379,7 @@
 
         <!-- AI Summary -->
         <div class="form-group">
-          <label class="form-label">🤖 Gemini AI 코칭 피드백</label>
+          <label class="form-label">🤖 Claude AI 코칭 피드백</label>
           <textarea id="editAiSummary" rows="4" class="form-textarea" style="background:#f0fdf4; border-color:#a7f3d0;"></textarea>
         </div>
 
@@ -2409,7 +2409,7 @@
         <button type="button" class="modal-close-btn" onclick="closeApiKeyModal()">✕</button>
       </div>
       <div style="font-size:13px; color:#475569; line-height:1.5; margin-bottom:12px;">
-        Google AI Studio의 <b>Gemini API Key</b>를 입력하시면 테니스 일지 코칭 및 스트링 수명 AI 정밀 진단이 활성화됩니다!
+        Google AI Studio의 <b>Gemini API Key</b>를 입력하시면 비디오 폼 AI 정밀 분석에 사용됩니다!
       </div>
       <form onsubmit="handleSaveApiKey(event)">
         <div class="form-group">
@@ -2973,13 +2973,12 @@
       }
 
       btn.disabled = true;
-      btn.innerHTML = '<span>⏳ Gemini 3.6 Flash가 2~3개월간의 타구 데이터를 정밀 분석 중...</span>';
-      showToast('Gemini AI가 스트링 피로도 & 텐션 로스를 진단 중입니다... 🤖✨');
+      btn.innerHTML = '<span>⏳ Claude AI가 2~3개월간의 타구 데이터를 정밀 분석 중...</span>';
+      showToast('Claude AI가 스트링 피로도 & 텐션 로스를 진단 중입니다... 🤖✨');
 
       callGasApi('analyzeTennisStringAI', {
         activeString: stringDataObj.activeString,
-        statsSince: stringDataObj.statsSince,
-        geminiApiKey: localStorage.getItem('gemini_api_key') || ''
+        statsSince: stringDataObj.statsSince
       }, function(res) {
         btn.disabled = false;
         btn.innerHTML = '<span>✨ AI 스트링 교체 시점 & 텐션 로스 정밀 진단</span>';
@@ -3030,7 +3029,7 @@
 
       btn.disabled = true;
       btn.innerHTML = '<span>⏳ AI 코칭 분석 중...</span>';
-      showToast('Gemini AI가 훈련 데이터와 수기 메모를 정밀 분석 중입니다... 🎾✨');
+      showToast('Claude AI가 훈련 데이터와 수기 메모를 정밀 분석 중입니다... 🎾✨');
 
       callGasApi('generateGeminiTennisSummary', {
         category: cat,
@@ -3041,8 +3040,7 @@
         focus_skill: skill,
         location: loc,
         court_type: court,
-        user_notes: userNotes,
-        geminiApiKey: localStorage.getItem('gemini_api_key') || ''
+        user_notes: userNotes
       }, function(res) {
         btn.disabled = false;
         btn.innerHTML = '<span>✨ AI 훈련 분석 & 코칭 생성</span>';
@@ -3602,7 +3600,7 @@
           photosHtml +
 
           (log.notes ? '<div class="log-notes"><div style="font-weight:700; color:#2563eb; margin-bottom:2px; font-size:11px;">📝 나의 수기 메모</div>' + escapeHtml(log.notes) + '</div>' : '') +
-          (log.ai_summary ? '<div class="log-ai-summary"><div style="font-weight:700; color:#065f46; margin-bottom:2px; font-size:11px;">🤖 Gemini AI 코칭 피드백</div>' + escapeHtml(log.ai_summary) + '</div>' : '') +
+          (log.ai_summary ? '<div class="log-ai-summary"><div style="font-weight:700; color:#065f46; margin-bottom:2px; font-size:11px;">🤖 Claude AI 코칭 피드백</div>' + escapeHtml(log.ai_summary) + '</div>' : '') +
           commentsSectionHtml +
         '</div>';
       }).join('');

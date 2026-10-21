@@ -11,8 +11,41 @@ var TELEGRAM_CHAT_ID = PropertiesService.getScriptProperties().getProperty("TELE
 var LINE_CHANNEL_ACCESS_TOKEN = PropertiesService.getScriptProperties().getProperty("LINE_CHANNEL_ACCESS_TOKEN") || "";
 var LINE_USER_ID = PropertiesService.getScriptProperties().getProperty("LINE_USER_ID") || "";
 
-// 🔑 Google Gemini AI API Key (신규 활성화 키)
-var DEFAULT_GEMINI_API_KEY = PropertiesService.getScriptProperties().getProperty("GEMINI_API_KEY") || ["AQ", "Ab8RN6INIjH3Md1wSsrIG66nwP_70P-ImQK5eUZiLrfYj5j73g"].join("."); 
+// 🔑 Google Gemini AI API Key - 스크립트 속성 GEMINI_API_KEY 에서 읽음 (비디오 분석 전용)
+var DEFAULT_GEMINI_API_KEY = PropertiesService.getScriptProperties().getProperty("GEMINI_API_KEY") || "";
+
+// 🤖 Anthropic Claude API (텍스트 AI 코칭/스트링 진단) - 스크립트 속성 ANTHROPIC_API_KEY 에서만 읽음
+var CLAUDE_MODEL = "claude-haiku-5-5";
+
+function callClaudeText(prompt, maxTokens) {
+  var apiKey = PropertiesService.getScriptProperties().getProperty("ANTHROPIC_API_KEY");
+  if (!apiKey) throw new Error("ANTHROPIC_API_KEY 스크립트 속성이 설정되지 않았습니다.");
+  var response = UrlFetchApp.fetch("https://api.anthropic.com/v1/messages", {
+    method: "post",
+    contentType: "application/json",
+    headers: {
+      "x-api-key": apiKey,
+      "anthropic-version": "2026-10-21"
+    },
+    payload: JSON.stringify({
+      model: CLAUDE_MODEL,
+      max_tokens: maxTokens,
+      messages: [{ role: "user", content: prompt }]
+    }),
+    muteHttpExceptions: true
+  });
+  var resCode = response.getResponseCode();
+  var resText = response.getContentText();
+  if (resCode !== 200) throw new Error("Claude API Error (" + resCode + "): " + resText);
+  var json = JSON.parse(resText);
+  if (json.stop_reason === "refusal") throw new Error("Claude API가 요청을 거절했습니다.");
+  var text = "";
+  (json.content || []).forEach(function(block) {
+    if (block.type === "text" && block.text) text += block.text;
+  });
+  if (!text.trim()) throw new Error("Claude API 응답에 텍스트가 없습니다.");
+  return text.trim();
+}
 
 function doGet(e) {
   if (e && e.parameter && e.parameter.action) {
@@ -741,7 +774,6 @@ function deleteStringRecord(rowIndex) {
 // -------------------------------------------------------------
 function analyzeTennisStringAI(item) {
   try {
-    var apiKey = item.geminiApiKey || DEFAULT_GEMINI_API_KEY;
     var stringInfo = item.activeString;
     var stats = item.statsSince;
 
@@ -778,56 +810,17 @@ function analyzeTennisStringAI(item) {
       "5. 💡 [맞춤 스트링 추천 & 최적 텐션 세팅 팁]\n" +
       "   - 다음 교체 시기(앞으로 N시간/N주 이내)와 여성 동호인에게 추천하는 부드러운 스트링 및 텐션(lbs) 가이드 제시.";
 
-    var modelsToTry = ["gemini-3-flash-preview", "gemini-3.6-flash", "gemini-3.7-flash", "gemini-flash-latest"];
-    var lastError = "";
-
-    for (var i = 0; i < modelsToTry.length; i++) {
-      var modelName = modelsToTry[i];
-      var url = "https://generativelanguage.googleapis.com/v1beta/models/" + modelName + ":generateContent?key=" + apiKey;
-      
-      var payload = {
-        contents: [{ parts: [{ text: prompt }] }],
-        generationConfig: { temperature: 0.7, maxOutputTokens: 8192 }
+    try {
+      var fullText = callClaudeText(prompt, 16000);
+      return { success: true, analysis: fullText, isAi: true };
+    } catch(apiErr) {
+      Logger.log("analyzeTennisStringAI Claude error: " + apiErr.message);
+      return {
+        success: false,
+        error: apiErr.message,
+        analysis: "[🎾 스트링 진단 가이드]\n누적 플레이 " + stats.totalHours + "시간 / 경과 " + stats.daysElapsed + "일차입니다. 통상적인 폴리 스트링 교체 주기(15~20시간)를 감안하여 점검하시길 권장합니다."
       };
-
-      var options = {
-        method: "post",
-        contentType: "application/json",
-        payload: JSON.stringify(payload),
-        muteHttpExceptions: true
-      };
-
-      var response = UrlFetchApp.fetch(url, options);
-      var resCode = response.getResponseCode();
-      var resText = response.getContentText();
-
-      if (resCode === 200) {
-        var json = JSON.parse(resText);
-        if (json.candidates && json.candidates.length > 0 && json.candidates[0].content && json.candidates[0].content.parts.length > 0) {
-          var parts = json.candidates[0].content.parts;
-          var fullText = "";
-          for (var p = 0; p < parts.length; p++) {
-            if (!parts[p].thought && parts[p].text) fullText += parts[p].text;
-          }
-          if (!fullText.trim()) fullText = parts[parts.length - 1].text || "";
-          if (fullText.trim()) {
-            return {
-              success: true,
-              analysis: fullText.trim(),
-              isAi: true
-            };
-          }
-        }
-      } else {
-        lastError = "Model " + modelName + " Error (" + resCode + "): " + resText;
-      }
     }
-
-    return {
-      success: false,
-      error: lastError,
-      analysis: "[🎾 스트링 진단 가이드]\n누적 플레이 " + stats.totalHours + "시간 / 경과 " + stats.daysElapsed + "일차입니다. 통상적인 폴리 스트링 교체 주기(15~20시간)를 감안하여 점검하시길 권장합니다."
-    };
   } catch(e) {
     Logger.log("analyzeTennisStringAI error: " + e.message);
     return {
@@ -840,7 +833,6 @@ function analyzeTennisStringAI(item) {
 
 function generateGeminiTennisSummary(item) {
   try {
-    var apiKey = item.geminiApiKey || DEFAULT_GEMINI_API_KEY;
     var cat = item.category || '테니스';
     var dur = item.duration_minutes || 0;
     var rpe = item.intensity || 5;
@@ -871,35 +863,11 @@ function generateGeminiTennisSummary(item) {
       "🔥 [다음 세션 실천 팁]\n" +
       "• (다음 경기/레슨에서 바로 적용할 구체적인 핵심 포인트 1~2줄)";
 
-    var modelsToTry = ["gemini-3-flash-preview", "gemini-3.6-flash", "gemini-3.7-flash", "gemini-flash-latest"];
-    for (var i = 0; i < modelsToTry.length; i++) {
-      var modelName = modelsToTry[i];
-      var url = "https://generativelanguage.googleapis.com/v1beta/models/" + modelName + ":generateContent?key=" + apiKey;
-      var payload = {
-        contents: [{ parts: [{ text: prompt }] }],
-        generationConfig: { temperature: 0.6, maxOutputTokens: 1200 }
-      };
-      var options = {
-        method: "post",
-        contentType: "application/json",
-        payload: JSON.stringify(payload),
-        muteHttpExceptions: true
-      };
-      var response = UrlFetchApp.fetch(url, options);
-      if (response.getResponseCode() === 200) {
-        var json = JSON.parse(response.getContentText());
-        if (json.candidates && json.candidates.length > 0 && json.candidates[0].content && json.candidates[0].content.parts.length > 0) {
-          var parts = json.candidates[0].content.parts;
-          var txt = "";
-          for (var p = 0; p < parts.length; p++) {
-            if (!parts[p].thought && parts[p].text) txt += parts[p].text;
-          }
-          if (!txt.trim()) txt = parts[parts.length - 1].text || "";
-          if (txt.trim()) {
-            return { success: true, summary: txt.trim(), isAi: true };
-          }
-        }
-      }
+    try {
+      var txt = callClaudeText(prompt, 16000);
+      return { success: true, summary: txt, isAi: true };
+    } catch(apiErr) {
+      Logger.log("generateGeminiTennisSummary Claude error: " + apiErr.message);
     }
 
     return {
