@@ -920,25 +920,34 @@ function sendTelegramMessage(text) {
   }
 }
 
+// 텔레그램 HTML parse_mode용 이스케이프 (<, >, & 가 포함되면 메시지 전송이 거부됨)
+function escapeTelegramHtml(str) {
+  return String(str == null ? '' : str)
+    .replace(/&/g, '&amp;')
+    .replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;');
+}
+
 function sendTennisLogTelegramNotification(item) {
-  var title = "🎾 <b>[테니스 " + (item.category || '활동') + "]</b> " + (item.title || '테니스 일지');
+  var esc = escapeTelegramHtml;
+  var title = "🎾 <b>[테니스 " + esc(item.category || '활동') + "]</b> " + esc(item.title || '테니스 일지');
   var lines = [title];
-  lines.push("📅 <b>일자:</b> " + (item.date || ''));
-  lines.push("⏱️ <b>시간/강도:</b> " + (item.duration_minutes || 0) + "분 (RPE " + (item.intensity || 5) + "/10)");
+  lines.push("📅 <b>일자:</b> " + esc(item.date || ''));
+  lines.push("⏱️ <b>시간/강도:</b> " + esc(item.duration_minutes || 0) + "분 (RPE " + esc(item.intensity || 5) + "/10)");
   if (item.location || item.court_type) {
-    lines.push("🏟️ <b>구장:</b> " + (item.location || '') + " (" + (item.court_type || '인조잔디') + ")");
+    lines.push("🏟️ <b>구장:</b> " + esc(item.location || '') + " (" + esc(item.court_type || '인조잔디') + ")");
   }
   if (item.category === '클럽게임') {
-    if (item.result) lines.push("🏆 <b>경기결과:</b> " + item.result + (item.score ? " (" + item.score + ")" : ""));
-    if (item.players) lines.push("👥 <b>상대/파트너:</b> " + item.players);
+    if (item.result) lines.push("🏆 <b>경기결과:</b> " + esc(item.result) + (item.score ? " (" + esc(item.score) + ")" : ""));
+    if (item.players) lines.push("👥 <b>상대/파트너:</b> " + esc(item.players));
   } else if (item.focus_skill) {
-    lines.push("🎯 <b>집중기술:</b> " + item.focus_skill);
+    lines.push("🎯 <b>집중기술:</b> " + esc(item.focus_skill));
   }
   if (item.notes) {
-    lines.push("\n📝 <b>수기 메모:</b>\n" + item.notes);
+    lines.push("\n📝 <b>수기 메모:</b>\n" + esc(item.notes));
   }
   if (item.ai_summary) {
-    lines.push("\n🤖 <b>AI 코칭 피드백:</b>\n" + item.ai_summary);
+    lines.push("\n🤖 <b>AI 코칭 피드백:</b>\n" + esc(item.ai_summary));
   }
   sendTelegramMessage(lines.join("\n"));
 }
@@ -946,9 +955,9 @@ function sendTennisLogTelegramNotification(item) {
 function sendTennisCommentTelegramNotification(logDate, logTitle, comment) {
   var lines = [
     "💬 <b>[테니스 일지 새 댓글]</b>",
-    "📌 <b>대상 일지:</b> " + logDate + " " + logTitle,
-    "👤 <b>작성자:</b> " + comment.author,
-    "💬 <b>내용:</b>\n" + comment.text
+    "📌 <b>대상 일지:</b> " + escapeTelegramHtml(logDate) + " " + escapeTelegramHtml(logTitle),
+    "👤 <b>작성자:</b> " + escapeTelegramHtml(comment.author),
+    "💬 <b>내용:</b>\n" + escapeTelegramHtml(comment.text)
   ];
   sendTelegramMessage(lines.join("\n"));
 }
@@ -1017,15 +1026,16 @@ function testTennisLineAlert() {
 // -------------------------------------------------------------
 // [7-2. 🤖 텔레그램 메신저 스트링 교체 실시간 알림]
 function sendTennisStringTelegramNotification(item) {
+  var esc = escapeTelegramHtml;
   var lines = [
     "🎾 <b>[새 스트링 교체 등록]</b>",
-    "📅 <b>교체일자:</b> " + (item.date || ''),
-    "🏸 <b>라켓:</b> " + (item.racket || ''),
-    "🧵 <b>스트링:</b> " + (item.string_name || '') + " (" + (item.string_type || '폴리') + ")",
-    "⚡ <b>텐션:</b> " + (item.tension || '') + " lbs",
+    "📅 <b>교체일자:</b> " + esc(item.date || ''),
+    "🏸 <b>라켓:</b> " + esc(item.racket || ''),
+    "🧵 <b>스트링:</b> " + esc(item.string_name || '') + " (" + esc(item.string_type || '폴리') + ")",
+    "⚡ <b>텐션:</b> " + esc(item.tension || '') + " lbs",
     (item.cost ? "💰 <b>비용:</b> " + Number(item.cost).toLocaleString() + "원" : ""),
-    (item.shop_name ? "🏪 <b>매장:</b> " + item.shop_name : ""),
-    (item.notes ? "💬 <b>메모:</b> " + item.notes : "")
+    (item.shop_name ? "🏪 <b>매장:</b> " + esc(item.shop_name) : ""),
+    (item.notes ? "💬 <b>메모:</b> " + esc(item.notes) : "")
   ].filter(Boolean);
   sendTelegramMessage(lines.join("\n"));
 }
