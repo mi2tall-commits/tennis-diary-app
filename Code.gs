@@ -337,12 +337,17 @@ function saveTennisLog(item) {
     var aiSummary = item.ai_summary || '';
     var photoIds = [];
 
+    var failedMedia = 0;
     if (item.photos && item.photos.length > 0) {
-      try {
-        var folder = getOrCreatePhotoFolder();
-        for (var p = 0; p < item.photos.length; p++) {
-          var base64Data = item.photos[p];
-          if (base64Data && base64Data.indexOf('data:') === 0) {
+      var folder = null;
+      try { folder = getOrCreatePhotoFolder(); } catch(eFolder) { Logger.log('Tennis photo folder error: ' + eFolder.message); }
+      for (var p = 0; p < item.photos.length; p++) {
+        var base64Data = item.photos[p];
+        if (!base64Data || base64Data.indexOf('data:') !== 0) continue;
+        // 파일마다 따로 시도하고, 실패한 수를 결과로 돌려준다(예전에는 조용히 버렸음)
+        try {
+          if (!folder) throw new Error('사진 폴더를 열 수 없습니다.');
+          {
             var parts = base64Data.split(',');
             var contentType = parts[0].split(';')[0].replace('data:', '');
             var isVideo = contentType.indexOf('video/') === 0;
@@ -362,9 +367,10 @@ function saveTennisLog(item) {
             var savedId = (isVideo ? 'vid:' : '') + file.getId();
             photoIds.push(savedId);
           }
+        } catch(e) {
+          failedMedia++;
+          Logger.log('Tennis media upload error: ' + e.message);
         }
-      } catch(e) {
-        Logger.log('Tennis media upload error: ' + e.message);
       }
     }
 
@@ -377,7 +383,7 @@ function saveTennisLog(item) {
     ]);
 
     sendTennisLogTelegramNotification(item);
-    return { success: true };
+    return { success: true, failedMedia: failedMedia };
   } catch (e) {
     Logger.log("saveTennisLog error: " + e.message);
     throw new Error("저장 실패: " + e.message);
@@ -404,12 +410,17 @@ function updateTennisLog(item) {
     var aiSummary = item.ai_summary || '';
     var photoIds = item.existingPhotoIds || [];
 
+    var failedMedia = 0;
     if (item.photos && item.photos.length > 0) {
-      try {
-        var folder = getOrCreatePhotoFolder();
-        for (var p = 0; p < item.photos.length; p++) {
-          var base64Data = item.photos[p];
-          if (base64Data && base64Data.indexOf('data:') === 0) {
+      var folder = null;
+      try { folder = getOrCreatePhotoFolder(); } catch(eFolder) { Logger.log('Tennis photo folder error: ' + eFolder.message); }
+      for (var p = 0; p < item.photos.length; p++) {
+        var base64Data = item.photos[p];
+        if (!base64Data || base64Data.indexOf('data:') !== 0) continue;
+        // 파일마다 따로 시도하고, 실패한 수를 결과로 돌려준다(예전에는 조용히 버렸음)
+        try {
+          if (!folder) throw new Error('사진 폴더를 열 수 없습니다.');
+          {
             var parts = base64Data.split(',');
             var contentType = parts[0].split(';')[0].replace('data:', '');
             var isVideo = contentType.indexOf('video/') === 0;
@@ -429,9 +440,10 @@ function updateTennisLog(item) {
             var savedId = (isVideo ? 'vid:' : '') + file.getId();
             photoIds.push(savedId);
           }
+        } catch(e) {
+          failedMedia++;
+          Logger.log('Tennis media upload error: ' + e.message);
         }
-      } catch(e) {
-        Logger.log('Tennis media upload error: ' + e.message);
       }
     }
 
@@ -444,7 +456,7 @@ function updateTennisLog(item) {
     ]]);
     sheet.getRange(rowIndex, 15).setValue(aiSummary);
 
-    return { success: true };
+    return { success: true, failedMedia: failedMedia };
   } catch (e) {
     Logger.log("updateTennisLog error: " + e.message);
     throw new Error("수정 실패: " + e.message);

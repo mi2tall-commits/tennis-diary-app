@@ -2804,7 +2804,10 @@
       }
 
       // 🔄 백그라운드 무중단 서버 동기화
-      callGasApi('updateTennisLog', data, function() {
+      callGasApi('updateTennisLog', data, function(res) {
+        if (res && res.failedMedia > 0) {
+          alert('일지는 수정됐지만 새 사진·동영상 ' + res.failedMedia + '개는 올리지 못했습니다. 파일이 너무 크면 줄여서 다시 올려 주세요.');
+        }
         loadData(true);
         loadStringData();
       }, function(err) {
@@ -3490,7 +3493,10 @@
       switchTab('list');
 
       // 🔄 백그라운드 무중단 서버 동기화
-      callGasApi('saveTennisLog', data, function() {
+      callGasApi('saveTennisLog', data, function(res) {
+        if (res && res.failedMedia > 0) {
+          alert('일지는 저장됐지만 사진·동영상 ' + res.failedMedia + '개는 올리지 못했습니다. 파일이 너무 크면 줄여서 수정 화면에서 다시 올려 주세요.');
+        }
         loadData(true);
         loadStringData();
       }, function(err) {
