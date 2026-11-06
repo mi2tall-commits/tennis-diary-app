@@ -1,0 +1,168 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>테니스 일지 앱 점검 결과 (2026-11-06)</title>
+<style>
+  :root { --ink:#1f2937; --muted:#6b7280; --line:#e5e7eb; --bg:#f9fafb; --crit:#b91c1c; --high:#c2410c; --med:#a16207; --low:#2563eb; --ok:#15803d; }
+  * { box-sizing:border-box; }
+  body { margin:0; font-family:-apple-system,"Malgun Gothic","Apple SD Gothic Neo",sans-serif; color:var(--ink); background:#fff; line-height:1.6; font-size:15px; }
+  main { max-width:960px; margin:0 auto; padding:16px; }
+  h1 { font-size:20px; margin:4px 0 12px; }
+  h2 { font-size:17px; margin:28px 0 10px; border-bottom:2px solid var(--line); padding-bottom:4px; }
+  .box { border-radius:10px; padding:12px 14px; margin:10px 0; }
+  .conclusion { background:#ecfdf5; border:1px solid #a7f3d0; }
+  .decide { background:#fff7ed; border:1px solid #fed7aa; }
+  .decide ol { margin:6px 0 0; padding-left:20px; }
+  .decide li { margin:6px 0; }
+  .meta { color:var(--muted); font-size:13px; }
+  table { width:100%; border-collapse:collapse; font-size:14px; }
+  th, td { border:1px solid var(--line); padding:8px; vertical-align:top; text-align:left; }
+  th { background:var(--bg); }
+  code { background:#f3f4f6; padding:1px 4px; border-radius:4px; font-size:12.5px; word-break:break-all; }
+  .sev { display:inline-block; padding:1px 8px; border-radius:999px; color:#fff; font-size:12px; font-weight:700; white-space:nowrap; }
+  .critical { background:var(--crit); } .high { background:var(--high); } .medium { background:var(--med); } .low { background:var(--low); }
+  .pass { color:var(--ok); font-weight:700; } .fail { color:var(--crit); font-weight:700; } .skip { color:var(--muted); font-weight:700; }
+  .stats { display:flex; gap:10px; flex-wrap:wrap; }
+  .stat { flex:1 1 140px; background:var(--bg); border:1px solid var(--line); border-radius:10px; padding:10px; text-align:center; }
+  .stat b { display:block; font-size:22px; }
+  ul.tight li { margin:4px 0; }
+  /* 폰 폭: 표를 카드처럼 쌓는다 */
+  @media (max-width:640px) {
+    table, thead, tbody, tr, th, td { display:block; }
+    thead { display:none; }
+    tr { border:1px solid var(--line); border-radius:10px; margin:10px 0; padding:6px 8px; }
+    td { border:none; padding:4px 0; }
+    td::before { content:attr(data-k); display:block; font-size:12px; color:var(--muted); font-weight:700; }
+  }
+</style>
+</head>
+<body>
+<main>
+<h1>테니스 일지 앱(tennis-diary-app) 점검 결과</h1>
+<p class="meta">2026-11-06 · 브랜치 <code>audit/20261106</code> · 커밋 8개(아직 GitHub에 올리지 않음, 배포 안 함)</p>
+
+<div class="box conclusion">
+  <b>결론.</b> 확인된 문제 10개 중 9개를 코드로 고쳤고, 자동 시험 24개가 모두 통과합니다(고치기 전에는 16개 실패).
+  가장 큰 위험 두 가지는 코드만으로 끝나지 않습니다. <b>공개 저장소에 노출된 Gemini 키는 직접 폐기해야 하고</b>, <b>로그인 없이 누구나 일지를 지우고 고칠 수 있는 문제(#2)는 아직 그대로</b>입니다.
+  고친 코드도 아직 실제 앱에 올라가지 않았습니다. 아래 순서대로 정해 주세요.
+</div>
+
+<div class="box decide">
+  <b>주인이 정할 것 (위에서부터 급한 순)</b>
+  <ol>
+    <li><b>Gemini 키 즉시 폐기·재발급.</b> Google AI Studio에서 지금 키를 지우고 새 키를 만든 뒤, Apps Script 편집기 &gt; 프로젝트 설정 &gt; 스크립트 속성에 <code>GEMINI_API_KEY</code>로 넣으세요. 코드에서 대체 키를 뺐기 때문에, 속성이 비어 있는 채로 배포하면 AI 분석 기능이 멈춥니다. git 기록에 남은 옛 키를 지울지(기록 다시 쓰기)도 정해야 합니다. 폐기만 하면 옛 키는 쓸모가 없어지므로 기록 정리는 급하지 않습니다.</li>
+    <li><b>누가 쓸 수 있게 할지(#2).</b> 세 가지 안이 있습니다. ① 쓰기·AI 요청에 비밀 PIN을 같이 보내게 하기(지금 화면 유지, 반나절 작업) ② 구글 로그인한 사람만(<code>ANYONE</code>) ③ 나만(<code>MYSELF</code>). 추천은 ①입니다. 가족·지인이 지금처럼 쓰면서도 모르는 사람은 막을 수 있습니다. 사진 폴더의 "링크가 있는 누구나 보기" 공유를 유지할지도 함께 정해 주세요.</li>
+    <li><b>고친 코드 배포.</b> <code>clasp push</code> 후 새 버전 배포, GitHub Pages에도 <code>index.html</code> 반영. 이번 점검에서는 배포하지 않았습니다.</li>
+    <li><b>일지마다 고유 ID 열 추가(#4 근본 해결).</b> 시트에 열을 하나 더 만들고 기존 행에 ID를 채우는 작업입니다. 이번에는 날짜·제목으로 대조하는 안전장치만 넣었습니다.</li>
+    <li><b>영상 크기 한도.</b> 지금은 한 편 35MB, 최대 5편까지 받습니다. Apps Script 요청 한도에 걸리기 쉬우므로 10MB·1편 정도로 줄일지 정해 주세요. 이번에는 실패하면 알려 주는 것까지만 고쳤습니다.</li>
+  </ol>
+</div>
+
+<div class="stats">
+  <div class="stat"><b>10</b>확인된 문제</div>
+  <div class="stat"><b>9</b>코드로 고침</div>
+  <div class="stat"><b>16 → 0</b>실패한 시험 (고치기 전 → 후)</div>
+  <div class="stat"><b>24 / 24</b>통과</div>
+</div>
+
+<h2>문제별 결과 (심각한 순)</h2>
+<table>
+<thead><tr><th>심각도</th><th>파일:줄</th><th>쉬운 설명</th><th>고친 내용 / 커밋</th><th>시험 결과</th></tr></thead>
+<tbody>
+<tr>
+  <td data-k="심각도"><span class="sev critical">매우 심각</span></td>
+  <td data-k="파일:줄"><code>Code.gs:15</code></td>
+  <td data-k="쉬운 설명">공개 GitHub 저장소 코드에 Gemini 키가 들어 있었습니다. 두 조각으로 나눠 놓았지만 누구나 읽고 그대로 쓸 수 있습니다.</td>
+  <td data-k="고친 내용 / 커밋">코드 속 대체 키를 지우고 스크립트 속성에서만 읽게 함. <code>c29db1f</code><br><b>키 폐기는 주인이 직접 해야 함.</b></td>
+  <td data-k="시험 결과"><span class="pass">통과</span> 2개 (고치기 전 1개 실패)</td>
+</tr>
+<tr>
+  <td data-k="심각도"><span class="sev critical">매우 심각</span></td>
+  <td data-k="파일:줄"><code>appsscript.json:6</code></td>
+  <td data-k="쉬운 설명">앱이 "로그인 없이 누구나"로 열려 있고 확인 절차가 없습니다. 주소만 알면 남이 일지를 지우거나 고치고, 내 키로 AI 영상 분석을 계속 돌려 비용을 낼 수 있습니다.</td>
+  <td data-k="고친 내용 / 커밋"><b>고치지 않음.</b> 누가 쓸 수 있게 할지 정책을 정해야 해서 주인 결정으로 넘김(위 2번).</td>
+  <td data-k="시험 결과"><span class="skip">시험 없음</span></td>
+</tr>
+<tr>
+  <td data-k="심각도"><span class="sev high">높음</span></td>
+  <td data-k="파일:줄"><code>index.html:2648</code></td>
+  <td data-k="쉬운 설명">일지를 수정하면 붙어 있던 사진·동영상 연결이 매번 모두 사라졌습니다. 화면과 서버가 서로 다른 이름(<code>photos</code> / <code>photo_ids</code>)을 썼기 때문입니다. Drive 파일 자체는 남아 있습니다.</td>
+  <td data-k="고친 내용 / 커밋">화면이 서버 이름 <code>photo_ids</code>를 읽게 함. <code>442c5f5</code><br>이미 연결이 끊긴 일지는 Drive <code>Tennis_Log_Photos</code> 폴더(파일 이름에 날짜)에서 되살릴 수 있음.</td>
+  <td data-k="시험 결과"><span class="pass">통과</span> 3개 (고치기 전 1개 실패)</td>
+</tr>
+<tr>
+  <td data-k="심각도"><span class="sev high">높음</span></td>
+  <td data-k="파일:줄"><code>Code.gs:487</code>, <code>index.html:3792</code></td>
+  <td data-k="쉬운 설명">시트의 "몇 번째 줄"로 지우고 고쳐서, 연달아 지우면 줄이 당겨져 엉뚱한 일지가 지워질 수 있었습니다. 방금 저장한 일지에 바로 댓글을 달 때도 다른 일지에 달릴 수 있었습니다.</td>
+  <td data-k="고친 내용 / 커밋">요청에 일지 날짜·제목을 같이 보내고, 서버가 맞는 줄인지 확인. 줄이 밀렸으면 같은 날짜·제목 줄이 하나뿐일 때만 그 줄을 쓰고, 애매하면 아무것도 바꾸지 않고 "새로고침" 안내. 저장 중인 일지는 잠시 수정·삭제·댓글을 막음. <code>a72868b</code><br>근본 해결(고유 ID 열)은 위 4번.</td>
+  <td data-k="시험 결과"><span class="pass">통과</span> 5개 (고치기 전 4개 실패)</td>
+</tr>
+<tr>
+  <td data-k="심각도"><span class="sev medium">보통</span></td>
+  <td data-k="파일:줄"><code>index.html:3582</code></td>
+  <td data-k="쉬운 설명">누군가 작은따옴표(')가 든 댓글을 달면, 내가 연필(✏️) 버튼을 누를 때 그 사람이 심은 스크립트가 내 화면에서 실행될 수 있었습니다. 악의가 없어도 "it's" 같은 댓글은 수정 버튼이 고장 났습니다.</td>
+  <td data-k="고친 내용 / 커밋">버튼에 댓글 본문을 넣지 않고, 누르면 화면 데이터에서 본문을 찾음. <code>e962794</code></td>
+  <td data-k="시험 결과"><span class="pass">통과</span> 1개 (고치기 전 실패: 스크립트 실행됨)</td>
+</tr>
+<tr>
+  <td data-k="심각도"><span class="sev medium">보통</span></td>
+  <td data-k="파일:줄"><code>index.html:2549</code>, <code>Code.gs:702</code></td>
+  <td data-k="쉬운 설명">한국 시간 새벽 0~9시에 앱을 열면 기본 날짜가 어제로 채워졌습니다. 스트링 교체 후 지난 날짜도 오전에는 하루 적게 나왔습니다.</td>
+  <td data-k="고친 내용 / 커밋">화면은 기기 시간 기준 날짜, 서버는 한국 시간 날짜끼리 빼서 계산. <code>1809b3b</code></td>
+  <td data-k="시험 결과"><span class="pass">통과</span> 3개 (고치기 전 2개 실패)</td>
+</tr>
+<tr>
+  <td data-k="심각도"><span class="sev medium">보통</span></td>
+  <td data-k="파일:줄"><code>Code.gs:388</code>, <code>Code.gs:465</code></td>
+  <td data-k="쉬운 설명">사진·동영상 업로드가 실패해도 "저장되었습니다"만 뜨고 사진은 조용히 빠졌습니다. 한 장만 실패해도 나머지까지 같이 버려졌습니다.</td>
+  <td data-k="고친 내용 / 커밋">파일마다 따로 올리고, 실패한 수를 화면에 알림창으로 보여 줌. <code>fe65e43</code><br>크기 한도 조정은 위 5번.</td>
+  <td data-k="시험 결과"><span class="pass">통과</span> 3개 (고치기 전 2개 실패)</td>
+</tr>
+<tr>
+  <td data-k="심각도"><span class="sev low">낮음</span></td>
+  <td data-k="파일:줄"><code>Code.gs:473</code></td>
+  <td data-k="쉬운 설명">두 사람이 거의 같은 순간 댓글을 달면 하나가 사라질 수 있었습니다.</td>
+  <td data-k="고친 내용 / 커밋">일지·댓글·스트링 쓰기를 한 번에 하나씩 처리(잠금). Drive 업로드는 잠금 밖에서. <code>a72868b</code></td>
+  <td data-k="시험 결과"><span class="pass">통과</span> 2개 (고치기 전 1개 실패)</td>
+</tr>
+<tr>
+  <td data-k="심각도"><span class="sev low">낮음</span></td>
+  <td data-k="파일:줄"><code>Code.gs:1004</code></td>
+  <td data-k="쉬운 설명">메모에 <code>&lt;</code>나 <code>&amp;</code>(예: "포핸드 &lt;3 성공", "A&amp;B 복식")가 있으면 텔레그램 알림이 오지 않았습니다. 남이 댓글에 링크를 심어 내 텔레그램으로 보낼 수도 있었습니다.</td>
+  <td data-k="고친 내용 / 커밋">이런 기호를 텔레그램용으로 바꿔서 보내고, 텔레그램이 거절하면 기록을 남김. <code>07c9829</code></td>
+  <td data-k="시험 결과"><span class="pass">통과</span> 2개 (고치기 전 2개 실패)</td>
+</tr>
+<tr>
+  <td data-k="심각도"><span class="sev low">낮음</span></td>
+  <td data-k="파일:줄"><code>index.html:2484</code></td>
+  <td data-k="쉬운 설명">GitHub Pages 판에서 텔레그램 테스트 버튼을 누르면 실제로는 보내지 않는데 "발송 완료"가 떴습니다.</td>
+  <td data-k="고친 내용 / 커밋">서버가 처리하는 방식(GET)으로 보내고, 서버가 처리하지 못했다고 하면 실패로 알림. <code>ba3674a</code></td>
+  <td data-k="시험 결과"><span class="pass">통과</span> 3개 (고치기 전 2개 실패)</td>
+</tr>
+</tbody>
+</table>
+
+<h2>시험은 이렇게 했습니다</h2>
+<ul class="tight">
+  <li>위치: <code>tests/audit/audit.test.mjs</code>, <code>tests/audit/harness.mjs</code>. 실행: <code>node --test tests/audit/audit.test.mjs</code> (Node 24, 설치할 것 없음).</li>
+  <li><code>Code.gs</code>를 가짜 구글 환경(시트·Drive·잠금·텔레그램을 흉내 낸 것)에 올려 실제 함수를 그대로 돌렸습니다. 텔레그램·Gemini·Drive에는 실제로 아무것도 보내지 않았습니다.</li>
+  <li><code>index.html</code>은 해당 함수나 줄을 잘라 내어 돌렸습니다(수정 창의 사진 목록, 날짜, 댓글 버튼, 서버 호출 함수).</li>
+  <li>같은 시험을 고치기 전 코드에 돌리면 24개 중 16개 실패, 고친 뒤에는 24개 모두 통과합니다. 고친 뒤 <code>index.html</code>의 스크립트 두 덩어리와 <code>Code.gs</code> 모두 문법 검사를 통과했습니다.</li>
+  <li>저장소에는 원래 시험·빌드 설정이 없어 따로 돌릴 기존 시험은 없었습니다.</li>
+</ul>
+
+<h2>확인 못 한 것</h2>
+<ul class="tight">
+  <li>실제 Apps Script 서버에서의 동작(잠금 대기 시간, Drive 업로드, 날짜 서식). 가짜 환경에서만 확인했습니다.</li>
+  <li>실제 브라우저 화면. 알림창 문구, "저장 중입니다" 안내, 연필 버튼 동작을 눈으로 보지 않았습니다.</li>
+  <li>운영 중인 스크립트 속성에 <code>GEMINI_API_KEY</code>가 들어 있는지. 없으면 배포 뒤 AI 기능이 멈춥니다(위 1번).</li>
+  <li>이미 사진 연결이 끊긴 일지가 몇 개인지. 운영 시트를 열어 보지 않았습니다.</li>
+  <li>스트링 기록 삭제도 줄 번호 방식이라 같은 위험이 있습니다. 이번에는 잠금만 넣고 날짜 대조는 넣지 않았습니다.</li>
+  <li>인증이 없는 문제(#2)와 Drive 공유 범위는 그대로입니다.</li>
+  <li>GitHub 업로드와 배포는 하지 않았습니다.</li>
+</ul>
+</main>
+</body>
+</html>
