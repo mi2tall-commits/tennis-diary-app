@@ -917,31 +917,41 @@ function sendTelegramMessage(text) {
       payload: JSON.stringify(payload),
       muteHttpExceptions: true
     };
-    UrlFetchApp.fetch(url, options);
+    var res = UrlFetchApp.fetch(url, options);
+    if (res && res.getResponseCode && res.getResponseCode() !== 200) {
+      Logger.log("Telegram 알림 응답 오류 " + res.getResponseCode() + ": " + res.getContentText());
+    }
   } catch(e) {
     Logger.log("Telegram 알림 발송 실패: " + e.message);
   }
 }
 
+// 텔레그램 parse_mode HTML용: 사용자 입력의 & < > 를 바꿔 파싱 실패·링크 주입을 막는다
+function escapeTelegramHtml_(v) {
+  return String(v === undefined || v === null ? "" : v)
+    .replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;");
+}
+
 function sendTennisLogTelegramNotification(item) {
-  var title = "🎾 <b>[테니스 " + (item.category || '활동') + "]</b> " + (item.title || '테니스 일지');
+  var e = escapeTelegramHtml_;
+  var title = "🎾 <b>[테니스 " + e(item.category || '활동') + "]</b> " + e(item.title || '테니스 일지');
   var lines = [title];
-  lines.push("📅 <b>일자:</b> " + (item.date || ''));
-  lines.push("⏱️ <b>시간/강도:</b> " + (item.duration_minutes || 0) + "분 (RPE " + (item.intensity || 5) + "/10)");
+  lines.push("📅 <b>일자:</b> " + e(item.date || ''));
+  lines.push("⏱️ <b>시간/강도:</b> " + e(item.duration_minutes || 0) + "분 (RPE " + e(item.intensity || 5) + "/10)");
   if (item.location || item.court_type) {
-    lines.push("🏟️ <b>구장:</b> " + (item.location || '') + " (" + (item.court_type || '인조잔디') + ")");
+    lines.push("🏟️ <b>구장:</b> " + e(item.location || '') + " (" + e(item.court_type || '인조잔디') + ")");
   }
   if (item.category === '클럽게임') {
-    if (item.result) lines.push("🏆 <b>경기결과:</b> " + item.result + (item.score ? " (" + item.score + ")" : ""));
-    if (item.players) lines.push("👥 <b>상대/파트너:</b> " + item.players);
+    if (item.result) lines.push("🏆 <b>경기결과:</b> " + e(item.result) + (item.score ? " (" + e(item.score) + ")" : ""));
+    if (item.players) lines.push("👥 <b>상대/파트너:</b> " + e(item.players));
   } else if (item.focus_skill) {
-    lines.push("🎯 <b>집중기술:</b> " + item.focus_skill);
+    lines.push("🎯 <b>집중기술:</b> " + e(item.focus_skill));
   }
   if (item.notes) {
-    lines.push("\n📝 <b>수기 메모:</b>\n" + item.notes);
+    lines.push("\n📝 <b>수기 메모:</b>\n" + e(item.notes));
   }
   if (item.ai_summary) {
-    lines.push("\n🤖 <b>AI 코칭 피드백:</b>\n" + item.ai_summary);
+    lines.push("\n🤖 <b>AI 코칭 피드백:</b>\n" + e(item.ai_summary));
   }
   sendTelegramMessage(lines.join("\n"));
 }
@@ -949,9 +959,9 @@ function sendTennisLogTelegramNotification(item) {
 function sendTennisCommentTelegramNotification(logDate, logTitle, comment) {
   var lines = [
     "💬 <b>[테니스 일지 새 댓글]</b>",
-    "📌 <b>대상 일지:</b> " + logDate + " " + logTitle,
-    "👤 <b>작성자:</b> " + comment.author,
-    "💬 <b>내용:</b>\n" + comment.text
+    "📌 <b>대상 일지:</b> " + escapeTelegramHtml_(logDate) + " " + escapeTelegramHtml_(logTitle),
+    "👤 <b>작성자:</b> " + escapeTelegramHtml_(comment.author),
+    "💬 <b>내용:</b>\n" + escapeTelegramHtml_(comment.text)
   ];
   sendTelegramMessage(lines.join("\n"));
 }
@@ -1022,13 +1032,13 @@ function testTennisLineAlert() {
 function sendTennisStringTelegramNotification(item) {
   var lines = [
     "🎾 <b>[새 스트링 교체 등록]</b>",
-    "📅 <b>교체일자:</b> " + (item.date || ''),
-    "🏸 <b>라켓:</b> " + (item.racket || ''),
-    "🧵 <b>스트링:</b> " + (item.string_name || '') + " (" + (item.string_type || '폴리') + ")",
-    "⚡ <b>텐션:</b> " + (item.tension || '') + " lbs",
+    "📅 <b>교체일자:</b> " + escapeTelegramHtml_(item.date || ''),
+    "🏸 <b>라켓:</b> " + escapeTelegramHtml_(item.racket || ''),
+    "🧵 <b>스트링:</b> " + escapeTelegramHtml_(item.string_name || '') + " (" + escapeTelegramHtml_(item.string_type || '폴리') + ")",
+    "⚡ <b>텐션:</b> " + escapeTelegramHtml_(item.tension || '') + " lbs",
     (item.cost ? "💰 <b>비용:</b> " + Number(item.cost).toLocaleString() + "원" : ""),
-    (item.shop_name ? "🏪 <b>매장:</b> " + item.shop_name : ""),
-    (item.notes ? "💬 <b>메모:</b> " + item.notes : "")
+    (item.shop_name ? "🏪 <b>매장:</b> " + escapeTelegramHtml_(item.shop_name) : ""),
+    (item.notes ? "💬 <b>메모:</b> " + escapeTelegramHtml_(item.notes) : "")
   ].filter(Boolean);
   sendTelegramMessage(lines.join("\n"));
 }
