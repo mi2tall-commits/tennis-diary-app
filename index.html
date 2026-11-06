@@ -2627,7 +2627,7 @@
       document.getElementById('editAiSummary').value = log.ai_summary || '';
 
       // Photos
-      editExistingPhotoIds = log.photos ? [...log.photos] : [];
+      editExistingPhotoIds = Array.isArray(log.photo_ids) ? log.photo_ids.slice() : [];
       editNewPhotos = [];
       renderEditPhotosPreview();
 
