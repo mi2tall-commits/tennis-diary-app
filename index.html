@@ -2480,13 +2480,21 @@
         }
       } else {
         // Running on GitHub Pages
-        if (action === 'getTennisData' || action === 'getTennisStringData') {
+        // 서버가 {success:false}만 돌려주면(처리하지 않은 작업) 성공으로 보지 않는다
+        const isBareFailure = function(data) {
+          return !!data && data.success === false && Object.keys(data).length === 1;
+        };
+        // 텔레그램·라인 테스트는 서버 doGet만 처리하므로 GET으로 보낸다
+        if (action === 'getTennisData' || action === 'getTennisStringData' || action === 'testTennisTelegramAlert' || action === 'testTennisLineAlert') {
           fetch(GAS_API_URL + '?action=' + action + '&t=' + Date.now())
             .then(function(res) { return res.json(); })
             .then(function(data) {
               if (data && data.error) {
                 if (onFailure) onFailure(new Error(data.error));
                 else console.error('API 조회 오류:', data.error);
+              } else if (isBareFailure(data)) {
+                if (onFailure) onFailure(new Error('서버가 요청을 처리하지 못했습니다.'));
+                else console.error('API 처리 실패:', action);
               } else {
                 try {
                   if (onSuccess) onSuccess(data);
@@ -2507,6 +2515,9 @@
             if (data && data.error) {
               if (onFailure) onFailure(new Error(data.error));
               else alert('실행 실패: ' + data.error);
+            } else if (isBareFailure(data)) {
+              if (onFailure) onFailure(new Error('서버가 요청을 처리하지 못했습니다.'));
+              else alert('실행 실패: 서버가 요청을 처리하지 못했습니다.');
             } else {
               try {
                 if (onSuccess) onSuccess(data);
