@@ -66,7 +66,7 @@ function doPost(e) {
     } else if (action === 'updateTennisLog') {
       result = updateTennisLog(payload);
     } else if (action === 'deleteTennisLog') {
-      result = deleteTennisLog(payload.rowIndex || payload);
+      result = deleteTennisLog(payload);
     } else if (action === 'addTennisComment') {
       result = addTennisComment(payload.rowIndex, payload.commentData);
     } else if (action === 'updateTennisComment') {
@@ -376,11 +376,13 @@ function saveTennisLog(item) {
 
     var photoIdsStr = photoIds.join(',');
 
-    sheet.appendRow([
-      dateStr, category, title, dur, rpe,
-      result, score, players, courtType, loc,
-      focusSkill, notes, photoIdsStr, "[]", aiSummary
-    ]);
+    withScriptLock_(function() {
+      sheet.appendRow([
+        dateStr, category, title, dur, rpe,
+        result, score, players, courtType, loc,
+        focusSkill, notes, photoIdsStr, "[]", aiSummary
+      ]);
+    });
 
     sendTennisLogTelegramNotification(item);
     return { success: true, failedMedia: failedMedia };
@@ -449,12 +451,16 @@ function updateTennisLog(item) {
 
     var photoIdsStr = photoIds.join(',');
 
-    sheet.getRange(rowIndex, 1, 1, 13).setValues([[
-      dateStr, category, title, dur, rpe,
-      result, score, players, courtType, loc,
-      focusSkill, notes, photoIdsStr
-    ]]);
-    sheet.getRange(rowIndex, 15).setValue(aiSummary);
+    withScriptLock_(function() {
+      // 화면이 알던 행 번호가 그 사이 밀렸으면 수정 전 날짜·제목으로 맞는 행을 다시 찾는다
+      var targetRow = resolveLogRow_(sheet, rowIndex, item.expectDate, item.expectTitle);
+      sheet.getRange(targetRow, 1, 1, 13).setValues([[
+        dateStr, category, title, dur, rpe,
+        result, score, players, courtType, loc,
+        focusSkill, notes, photoIdsStr
+      ]]);
+      sheet.getRange(targetRow, 15).setValue(aiSummary);
+    });
 
     return { success: true, failedMedia: failedMedia };
   } catch (e) {
@@ -463,11 +469,78 @@ function updateTennisLog(item) {
   }
 }
 
-function deleteTennisLog(rowIndex) {
+// 쓰기 요청을 한 번에 하나씩 처리한다(동시에 쓰면 댓글이 사라지거나 행 번호가 엇갈림)
+function withScriptLock_(fn) {
+  var lock = LockService.getScriptLock();
+  lock.waitLock(20000);
   try {
-    if (!rowIndex || rowIndex < 2) throw new Error("유효하지 않은 일지 번호입니다.");
+    return fn();
+  } finally {
+    lock.releaseLock();
+  }
+}
+
+// 화면이 보낸 행 번호(rowIndex)가 지금도 같은 일지인지 날짜·제목으로 확인한다.
+// - 날짜·제목을 안 보낸 예전 요청: 행 번호를 그대로 쓴다
+// - 그 행이 맞으면 그대로, 아니면 날짜·제목이 같은 행이 딱 하나일 때만 그 행을 쓴다
+// - 확신할 수 없으면 아무것도 바꾸지 않고 오류를 낸다
+function resolveLogRow_(sheet, rowIndex, expectDate, expectTitle) {
+  rowIndex = Number(rowIndex);
+  if (!rowIndex || rowIndex < 2) throw new Error("유효하지 않은 일지 번호입니다.");
+  if ((expectDate === undefined || expectDate === null || expectDate === '') &&
+      (expectTitle === undefined || expectTitle === null)) {
+    return rowIndex;
+  }
+  var data = sheet.getDataRange().getValues();
+  var eDate = normalizeDateString(expectDate);
+  var eTitle = String(expectTitle || '').trim();
+  function matches(r) {
+    var row = data[r - 1];
+    return !!row && !!row[0] && normalizeDateString(row[0]) === eDate && String(row[2] || '').trim() === eTitle;
+  }
+  if (rowIndex <= data.length && matches(rowIndex)) return rowIndex;
+  var hits = [];
+  for (var r = 2; r <= data.length; r++) {
+    if (matches(r)) hits.push(r);
+  }
+  if (hits.length === 1) return hits[0];
+  throw new Error("일지 목록이 그 사이 바뀌었습니다. 새로고침한 뒤 다시 시도해 주세요.");
+}
+
+function readComments_(cell) {
+  var rawVal = cell.getValue();
+  var comments = [];
+  if (rawVal) {
+    try {
+      comments = typeof rawVal === 'string' ? JSON.parse(rawVal) : rawVal;
+      if (!Array.isArray(comments)) comments = [];
+    } catch(e) { comments = []; }
+  }
+  return comments;
+}
+
+// 댓글 id로 그 댓글이 든 행을 찾는다. 화면이 알던 행에 없으면(행이 밀림) 전체에서 찾는다.
+function findCommentRow_(sheet, rowIndex, commentId) {
+  rowIndex = Number(rowIndex);
+  function has(r) {
+    return readComments_(sheet.getRange(r, 14)).some(function(c) { return c && c.id === commentId; });
+  }
+  if (rowIndex >= 2 && rowIndex <= sheet.getLastRow() && has(rowIndex)) return rowIndex;
+  for (var r = 2; r <= sheet.getLastRow(); r++) {
+    if (has(r)) return r;
+  }
+  return rowIndex;
+}
+
+function deleteTennisLog(arg) {
+  try {
+    // 예전 화면은 행 번호(숫자)만, 새 화면은 { rowIndex, expectDate, expectTitle } 를 보낸다
+    var req = (arg && typeof arg === 'object') ? arg : { rowIndex: arg };
     var sheet = getSheet();
-    sheet.deleteRow(rowIndex);
+    withScriptLock_(function() {
+      var targetRow = resolveLogRow_(sheet, req.rowIndex, req.expectDate, req.expectTitle);
+      sheet.deleteRow(targetRow);
+    });
     return { success: true };
   } catch (e) {
     Logger.log("deleteTennisLog error: " + e.message);
@@ -481,16 +554,8 @@ function deleteTennisLog(rowIndex) {
 function addTennisComment(rowIndex, commentData) {
   try {
     if (!rowIndex || rowIndex < 2) throw new Error("유효하지 않은 일지 번호입니다.");
+    commentData = commentData || {};
     var sheet = getSheet();
-    var cell = sheet.getRange(rowIndex, 14);
-    var rawVal = cell.getValue();
-    var comments = [];
-    if (rawVal) {
-      try {
-        comments = typeof rawVal === 'string' ? JSON.parse(rawVal) : rawVal;
-        if (!Array.isArray(comments)) comments = [];
-      } catch(e) { comments = []; }
-    }
 
     var newComment = {
       id: Utilities.getUuid(),
@@ -500,10 +565,17 @@ function addTennisComment(rowIndex, commentData) {
     };
     if (!newComment.text) throw new Error("댓글 내용을 입력해주세요.");
 
-    comments.push(newComment);
-    cell.setValue(JSON.stringify(comments));
+    var comments = [];
+    var targetRow = rowIndex;
+    withScriptLock_(function() {
+      targetRow = resolveLogRow_(sheet, rowIndex, commentData.expectDate, commentData.expectTitle);
+      var cell = sheet.getRange(targetRow, 14);
+      comments = readComments_(cell);
+      comments.push(newComment);
+      cell.setValue(JSON.stringify(comments));
+    });
 
-    var rowData = sheet.getRange(rowIndex, 1, 1, 3).getValues()[0];
+    var rowData = sheet.getRange(targetRow, 1, 1, 3).getValues()[0];
     var logDate = normalizeDateString(rowData[0]);
     var logTitle = rowData[2] || rowData[1] || '테니스 일지';
     
@@ -526,28 +598,24 @@ function updateTennisComment(rowIndex, commentId, newText) {
   try {
     if (!rowIndex || rowIndex < 2 || !commentId) throw new Error("유효하지 않은 댓글 정보입니다.");
     var sheet = getSheet();
-    var cell = sheet.getRange(rowIndex, 14);
-    var rawVal = cell.getValue();
     var comments = [];
-    if (rawVal) {
-      try {
-        comments = typeof rawVal === 'string' ? JSON.parse(rawVal) : rawVal;
-        if (!Array.isArray(comments)) comments = [];
-      } catch(e) { comments = []; }
-    }
+    withScriptLock_(function() {
+      var cell = sheet.getRange(findCommentRow_(sheet, rowIndex, commentId), 14);
+      comments = readComments_(cell);
 
-    var updated = false;
-    for (var i = 0; i < comments.length; i++) {
-      if (comments[i].id === commentId) {
-        comments[i].text = String(newText || '').trim();
-        comments[i].updatedAt = Utilities.formatDate(new Date(), Session.getScriptTimeZone(), "yyyy-MM-dd HH:mm");
-        updated = true;
-        break;
+      var updated = false;
+      for (var i = 0; i < comments.length; i++) {
+        if (comments[i].id === commentId) {
+          comments[i].text = String(newText || '').trim();
+          comments[i].updatedAt = Utilities.formatDate(new Date(), Session.getScriptTimeZone(), "yyyy-MM-dd HH:mm");
+          updated = true;
+          break;
+        }
       }
-    }
 
-    if (!updated) throw new Error("수정할 댓글을 찾을 수 없습니다.");
-    cell.setValue(JSON.stringify(comments));
+      if (!updated) throw new Error("수정할 댓글을 찾을 수 없습니다.");
+      cell.setValue(JSON.stringify(comments));
+    });
     return { success: true, comments: comments };
   } catch(e) {
     Logger.log("updateTennisComment error: " + e.message);
@@ -559,18 +627,12 @@ function deleteTennisComment(rowIndex, commentId) {
   try {
     if (!rowIndex || rowIndex < 2 || !commentId) throw new Error("유효하지 않은 댓글 정보입니다.");
     var sheet = getSheet();
-    var cell = sheet.getRange(rowIndex, 14);
-    var rawVal = cell.getValue();
     var comments = [];
-    if (rawVal) {
-      try {
-        comments = typeof rawVal === 'string' ? JSON.parse(rawVal) : rawVal;
-        if (!Array.isArray(comments)) comments = [];
-      } catch(e) { comments = []; }
-    }
-
-    comments = comments.filter(function(c) { return c.id !== commentId; });
-    cell.setValue(JSON.stringify(comments));
+    withScriptLock_(function() {
+      var cell = sheet.getRange(findCommentRow_(sheet, rowIndex, commentId), 14);
+      comments = readComments_(cell).filter(function(c) { return c.id !== commentId; });
+      cell.setValue(JSON.stringify(comments));
+    });
     return { success: true, comments: comments };
   } catch(e) {
     Logger.log("deleteTennisComment error: " + e.message);
@@ -725,7 +787,7 @@ function deleteStringRecord(rowIndex) {
     var sheet = getStringSheet();
     var idx = parseInt(rowIndex);
     if (!idx || idx < 2) throw new Error("유효하지 않은 행입니다.");
-    sheet.deleteRow(idx);
+    withScriptLock_(function() { sheet.deleteRow(idx); });
     return { success: true };
   } catch(e) {
     Logger.log("deleteStringRecord error: " + e.message);

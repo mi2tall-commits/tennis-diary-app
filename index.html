@@ -2596,6 +2596,7 @@
     let editNewPhotos = [];
 
     function openEditTennisModal(rowIndex) {
+      if (blockIfPendingLog(rowIndex)) return;
       const log = allLogs.find(function(l) { return l.rowIndex === rowIndex; });
       if (!log) return;
 
@@ -2799,6 +2800,9 @@
       let prevLog = null;
       if (editIdx !== -1) {
         prevLog = Object.assign({}, allLogs[editIdx]);
+        // 서버가 행 번호가 밀렸는지 확인할 수 있게 '수정 전' 날짜·제목을 같이 보낸다
+        data.expectDate = prevLog.date || '';
+        data.expectTitle = prevLog.title || '';
         Object.assign(allLogs[editIdx], data);
         renderLogs();
       }
@@ -3487,7 +3491,9 @@
       btn.textContent = '✨ 테니스 일지 저장하기';
 
       // 로컬 메모리 즉시 추가 및 리스트 전환
-      const tempLog = Object.assign({ rowIndex: (allLogs.length ? allLogs[0].rowIndex + 1 : 2) }, data);
+      // 임시 번호는 기존 일지와 겹치지 않게 가장 큰 행 번호 + 1 (allLogs는 날짜순이라 첫 항목 번호는 최대가 아님)
+      const maxRow = allLogs.reduce(function(m, l) { return Math.max(m, Number(l.rowIndex) || 0); }, 1);
+      const tempLog = Object.assign({ rowIndex: maxRow + 1, _pending: true }, data);
       allLogs.unshift(tempLog);
       renderLogs();
       switchTab('list');
@@ -3651,6 +3657,7 @@
       const author = aEl ? aEl.value.trim() || '작성자' : '작성자';
       const text = tEl ? tEl.value.trim() : '';
       if (!text) return;
+      if (blockIfPendingLog(rowIndex)) return;
 
       if (author && author !== '작성자') { localStorage.setItem('tennis_diary_author_name', author); }
 
@@ -3685,7 +3692,10 @@
         submitBtn.textContent = '...';
       }
 
-      callGasApi('addTennisComment', { rowIndex: rowIndex, commentData: { author: author, text: text } }, function(res) {
+      // 서버가 행 번호가 밀렸는지 확인할 수 있게 일지 날짜·제목을 같이 보낸다
+      const commentData = { author: author, text: text };
+      if (log) { commentData.expectDate = log.date || ''; commentData.expectTitle = log.title || ''; }
+      callGasApi('addTennisComment', { rowIndex: rowIndex, commentData: commentData }, function(res) {
         if (submitBtn) {
           submitBtn.disabled = false;
           submitBtn.textContent = '등록';
@@ -3709,6 +3719,7 @@
     }
 
     function editComment(rowIndex, commentId) {
+      if (blockIfPendingLog(rowIndex)) return;
       // 현재 본문은 화면 데이터(allLogs)에서 찾는다(onclick 문자열로 받지 않음)
       const curLog = allLogs.find(function(l) { return l.rowIndex === rowIndex; });
       const curC = curLog && curLog.comments ? curLog.comments.find(function(item) { return item.id === commentId; }) : null;
@@ -3747,6 +3758,7 @@
     }
 
     function deleteComment(rowIndex, commentId) {
+      if (blockIfPendingLog(rowIndex)) return;
       if (!confirm('댓글을 삭제하시겠습니까?')) return;
 
       const log = allLogs.find(function(l) { return l.rowIndex === rowIndex; });
@@ -3776,7 +3788,18 @@
       });
     }
 
+    // 방금 저장해 아직 서버 행 번호가 없는 일지는 수정·삭제·댓글을 잠시 막는다
+    function blockIfPendingLog(rowIndex) {
+      const l = allLogs.find(function(x) { return x.rowIndex === rowIndex; });
+      if (l && l._pending) {
+        showToast('아직 저장 중입니다. 잠시 후 다시 시도해 주세요. ⏳');
+        return true;
+      }
+      return false;
+    }
+
     function deleteTennisLog(rowIndex) {
+      if (blockIfPendingLog(rowIndex)) return;
       if (!confirm('이 테니스 일지를 삭제하시겠습니까?')) return;
 
       // ⚡ 0ms 즉각 UI 반영 (화면에서 해당 일지 즉시 삭제 제거)
@@ -3790,7 +3813,11 @@
       }
 
       // 🔄 백그라운드 무중단 서버 동기화
-      callGasApi('deleteTennisLog', rowIndex, function() {
+      // 행 번호와 함께 날짜·제목을 보내 서버가 다른 일지를 지우지 않게 확인한다
+      const delReq = removedLog
+        ? { rowIndex: rowIndex, expectDate: removedLog.date || '', expectTitle: removedLog.title || '' }
+        : rowIndex;
+      callGasApi('deleteTennisLog', delReq, function() {
         loadData(true);
         loadStringData();
       }, function(err) {
