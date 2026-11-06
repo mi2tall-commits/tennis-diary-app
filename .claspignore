@@ -1,0 +1,6 @@
+# clasp push 때 Apps Script로 올리지 않을 파일 (점검 보고서·시험 코드)
+docs/**
+tests/**
+node_modules/**
+.venv/**
+README.md
