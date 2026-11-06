@@ -623,11 +623,14 @@ function getTennisStringData() {
       var activeDate = activeString.date;
       var sumIntensity = 0;
 
-      var tNow = new Date();
-      var tStrung = new Date(activeDate);
-      if (!isNaN(tStrung.getTime())) {
+      // 경과일은 '날짜'끼리 뺀다. 오늘 날짜를 스크립트 시간대(Asia/Seoul)로 구해,
+      // new Date('YYYY-MM-DD')(UTC 자정 = KST 09시)와 섞여 오전에 하루 적게 나오던 문제를 막는다.
+      var todayStr = Utilities.formatDate(new Date(), Session.getScriptTimeZone(), "yyyy-MM-dd");
+      var tNow = new Date(todayStr + "T00:00:00Z");
+      var tStrung = new Date(String(activeDate).substring(0, 10) + "T00:00:00Z");
+      if (!isNaN(tStrung.getTime()) && !isNaN(tNow.getTime())) {
         var diffTime = Math.abs(tNow - tStrung);
-        statsSince.daysElapsed = Math.floor(diffTime / (1000 * 60 * 60 * 24));
+        statsSince.daysElapsed = Math.round(diffTime / (1000 * 60 * 60 * 24));
       }
 
       if (tData && tData.length > 1) {

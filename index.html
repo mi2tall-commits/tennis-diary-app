@@ -2534,8 +2534,14 @@
     // String Data
     let stringDataObj = null;
 
+    // 기기 지역 시간 기준 YYYY-MM-DD (toISOString은 UTC라 한국 새벽 0~9시에 전날이 됨)
+    function getLocalDateString(d) {
+      d = d || new Date();
+      return d.getFullYear() + '-' + String(d.getMonth() + 1).padStart(2, '0') + '-' + String(d.getDate()).padStart(2, '0');
+    }
+
     function initApp() {
-      const today = new Date().toISOString().split('T')[0];
+      const today = getLocalDateString();
       const dEl = document.getElementById('inputDate');
       if (dEl) dEl.value = today;
       const strDEl = document.getElementById('strInputDate');
