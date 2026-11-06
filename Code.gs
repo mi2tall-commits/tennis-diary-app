@@ -11,8 +11,8 @@ var TELEGRAM_CHAT_ID = PropertiesService.getScriptProperties().getProperty("TELE
 var LINE_CHANNEL_ACCESS_TOKEN = PropertiesService.getScriptProperties().getProperty("LINE_CHANNEL_ACCESS_TOKEN") || "";
 var LINE_USER_ID = PropertiesService.getScriptProperties().getProperty("LINE_USER_ID") || "";
 
-// 🔑 Google Gemini AI API Key (신규 활성화 키)
-var DEFAULT_GEMINI_API_KEY = PropertiesService.getScriptProperties().getProperty("GEMINI_API_KEY") || ["AQ", "Ab8RN6INIjH3Md1wSsrIG66nwP_70P-ImQK5eUZiLrfYj5j73g"].join("."); 
+// 🔑 Google Gemini AI API Key: Apps Script 편집기 > 프로젝트 설정 > 스크립트 속성 GEMINI_API_KEY
+var DEFAULT_GEMINI_API_KEY = PropertiesService.getScriptProperties().getProperty("GEMINI_API_KEY") || ""; // 키는 Script Properties에만 둔다(코드·GitHub에 넣지 않음)
 
 function doGet(e) {
   if (e && e.parameter && e.parameter.action) {
