@@ -3549,14 +3549,15 @@
 
         const commentItemsHtml = comments.length > 0
           ? comments.map(function(c) {
-              const safeText = encodeURIComponent(c.text || '');
+              // 댓글 본문은 onclick에 넣지 않는다(작은따옴표로 스크립트 주입 가능). id도 안전한 글자만 남긴다.
+              const safeId = String(c.id || '').replace(/[^A-Za-z0-9_-]/g, '');
               return '<div class="comment-item">' +
                 '<div class="comment-header">' +
                   '<span class="comment-author">💬 ' + escapeHtml(c.author || '작성자') + '</span>' +
                   '<div class="comment-meta-right">' +
                     '<span class="comment-time">' + escapeHtml(c.createdAt || '') + '</span>' +
-                    '<button type="button" class="comment-action-btn" onclick="editComment(' + log.rowIndex + ', \'' + c.id + '\', \'' + safeText + '\')">✏️</button>' +
-                    '<button type="button" class="comment-action-btn delete" onclick="deleteComment(' + log.rowIndex + ', \'' + c.id + '\')">🗑️</button>' +
+                    '<button type="button" class="comment-action-btn" onclick="editComment(' + Number(log.rowIndex) + ', \'' + safeId + '\')">✏️</button>' +
+                    '<button type="button" class="comment-action-btn delete" onclick="deleteComment(' + Number(log.rowIndex) + ', \'' + safeId + '\')">🗑️</button>' +
                   '</div>' +
                 '</div>' +
                 '<div class="comment-text">' + escapeHtml(c.text || '') + '</div>' +
@@ -3684,8 +3685,11 @@
       });
     }
 
-    function editComment(rowIndex, commentId, safeText) {
-      const cur = decodeURIComponent(safeText || '');
+    function editComment(rowIndex, commentId) {
+      // 현재 본문은 화면 데이터(allLogs)에서 찾는다(onclick 문자열로 받지 않음)
+      const curLog = allLogs.find(function(l) { return l.rowIndex === rowIndex; });
+      const curC = curLog && curLog.comments ? curLog.comments.find(function(item) { return item.id === commentId; }) : null;
+      const cur = curC ? String(curC.text || '') : '';
       const newT = prompt('댓글을 수정하세요:', cur);
       if (!newT || newT.trim() === cur) return;
 
